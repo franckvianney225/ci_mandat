@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
-import Header from "@/components/admin/Header";
 import Statistics from "@/components/admin/Statistics";
 import RecentRequests from "@/components/admin/RecentRequests";
+import RequestsManagement from "@/components/admin/RequestsManagement";
 
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -38,12 +38,7 @@ export default function AdminDashboard() {
           </div>
         );
       case "requests":
-        return (
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Gestion des demandes</h2>
-            <p className="text-gray-600">Interface de gestion des demandes en cours de développement.</p>
-          </div>
-        );
+        return <RequestsManagement />;
       case "users":
         return (
           <div className="bg-white shadow rounded-lg p-6">
@@ -116,21 +111,21 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <Sidebar 
-        activeSection={activeSection} 
-        onSectionChange={setActiveSection} 
+      <Sidebar
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
       />
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <Header 
-          title={getSectionTitle()} 
-          subtitle={getSectionSubtitle()} 
-        />
-        
         {/* Main Content Area */}
         <main className="flex-1 p-6">
+          {/* Section Title */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">{getSectionTitle()}</h1>
+            <p className="text-gray-600 mt-1">{getSectionSubtitle()}</p>
+          </div>
+          
           {renderContent()}
         </main>
       </div>
