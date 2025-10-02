@@ -6,14 +6,15 @@ import RejectConfirm from "./RejectConfirm";
 import PDFMandat from "./PDFMandat";
 
 interface Request {
-  id: number;
+  id: string;
   nom: string;
   prenom: string;
   email: string;
   telephone: string;
-  departement: string;
+  circonscription: string;
   status: "pending" | "validated" | "rejected";
-  date: string;
+  createdAt: string;
+  referenceNumber: string;
 }
 
 interface ClientDetailsModalProps {
@@ -39,7 +40,7 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
 
   const handleConfirmValidate = () => {
     if (onStatusChange) {
-      onStatusChange(request.id, "validated");
+      onStatusChange(parseInt(request.id), "validated");
     }
     setIsValidateConfirmOpen(false);
     onClose();
@@ -47,7 +48,7 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
 
   const handleConfirmReject = () => {
     if (onStatusChange) {
-      onStatusChange(request.id, "rejected");
+      onStatusChange(parseInt(request.id), "rejected");
     }
     setIsRejectConfirmOpen(false);
     onClose();
@@ -175,7 +176,7 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
                   <h2 className="text-2xl font-bold text-gray-900">
                     {request.prenom} {request.nom}
                   </h2>
-                  <p className="text-sm text-gray-600">Demande #{request.id}</p>
+                  <p className="text-sm text-gray-600">Référence: {request.referenceNumber}</p>
                 </div>
               </div>
               <button
@@ -237,10 +238,10 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
                 <div className="space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Département
+                      Circonscription
                     </label>
                     <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                      Département {request.departement}
+                      {request.circonscription}
                     </p>
                   </div>
 
@@ -249,7 +250,7 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
                       Date de la demande
                     </label>
                     <p className="text-sm text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                      {new Date(request.date).toLocaleDateString('fr-FR', {
+                      {new Date(request.createdAt).toLocaleDateString('fr-FR', {
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',
@@ -324,7 +325,7 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
         requestInfo={request ? {
           nom: request.nom,
           prenom: request.prenom,
-          id: request.id
+          id: parseInt(request.id)
         } : null}
       />
 
@@ -336,7 +337,7 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
         requestInfo={request ? {
           nom: request.nom,
           prenom: request.prenom,
-          id: request.id
+          id: parseInt(request.id)
         } : null}
       />
     </Fragment>

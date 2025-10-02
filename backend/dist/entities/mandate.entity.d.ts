@@ -22,10 +22,11 @@ export declare class Mandate {
     formData: {
         nom: string;
         prenom: string;
+        fonction: string;
         email: string;
         telephone: string;
-        departement: string;
-        [key: string]: any;
+        circonscription: string;
+        [key: string]: unknown;
     };
     status: MandateStatus;
     adminApprovedAt: Date;

@@ -6,7 +6,7 @@ import * as bcrypt from 'bcrypt';
 
 import { User, UserRole, UserStatus } from '../../entities/user.entity';
 
-interface LoginResponse {
+export interface LoginResponse {
   access_token: string;
   user: {
     id: string;

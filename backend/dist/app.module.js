@@ -18,11 +18,6 @@ const database_config_1 = require("./config/database.config");
 const auth_module_1 = require("./modules/auth/auth.module");
 const users_module_1 = require("./modules/users/users.module");
 const mandates_module_1 = require("./modules/mandates/mandates.module");
-const security_module_1 = require("./modules/security/security.module");
-const email_module_1 = require("./modules/email/email.module");
-const jwt_auth_guard_1 = require("./common/guards/jwt-auth.guard");
-const roles_guard_1 = require("./common/guards/roles.guard");
-const audit_interceptor_1 = require("./common/interceptors/audit.interceptor");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -99,25 +94,11 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
             mandates_module_1.MandatesModule,
-            security_module_1.SecurityModule,
-            email_module_1.EmailModule,
         ],
         providers: [
             {
                 provide: core_1.APP_GUARD,
-                useClass: jwt_auth_guard_1.JwtAuthGuard,
-            },
-            {
-                provide: core_1.APP_GUARD,
-                useClass: roles_guard_1.RolesGuard,
-            },
-            {
-                provide: core_1.APP_GUARD,
                 useClass: throttler_1.ThrottlerGuard,
-            },
-            {
-                provide: core_1.APP_INTERCEPTOR,
-                useClass: audit_interceptor_1.AuditInterceptor,
             },
         ],
     })

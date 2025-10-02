@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = exports.UserStatus = exports.UserRole = void 0;
 const typeorm_1 = require("typeorm");
 const class_transformer_1 = require("class-transformer");
+const mandate_entity_1 = require("./mandate.entity");
 var UserRole;
 (function (UserRole) {
     UserRole["ADMIN"] = "admin";
@@ -92,6 +93,18 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'int', default: 0 }),
     __metadata("design:type", Number)
 ], User.prototype, "loginAttempts", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => mandate_entity_1.Mandate, (mandate) => mandate.client),
+    __metadata("design:type", Array)
+], User.prototype, "mandates", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => mandate_entity_1.Mandate, (mandate) => mandate.adminApprover),
+    __metadata("design:type", Array)
+], User.prototype, "approvedMandatesAsAdmin", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => mandate_entity_1.Mandate, (mandate) => mandate.superAdminApprover),
+    __metadata("design:type", Array)
+], User.prototype, "approvedMandatesAsSuperAdmin", void 0);
 __decorate([
     (0, typeorm_1.BeforeInsert)(),
     (0, typeorm_1.BeforeUpdate)(),

@@ -92,12 +92,12 @@ __decorate([
     __metadata("design:type", String)
 ], Mandate.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => user_entity_1.User, (user) => user.mandates, { nullable: false }),
+    (0, typeorm_1.ManyToOne)(() => user_entity_1.User, (user) => user.mandates, { nullable: true }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", user_entity_1.User)
 ], Mandate.prototype, "client", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
 ], Mandate.prototype, "clientId", void 0);
 __decorate([

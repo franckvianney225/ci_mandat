@@ -13,13 +13,10 @@ import typeOrmConfig from './config/database.config';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { MandatesModule } from './modules/mandates/mandates.module';
-import { SecurityModule } from './modules/security/security.module';
-import { EmailModule } from './modules/email/email.module';
 
 // Guards et Intercepteurs
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
-import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 
 @Module({
   imports: [
@@ -117,27 +114,12 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
     AuthModule,
     UsersModule,
     MandatesModule,
-    SecurityModule,
-    EmailModule,
   ],
   providers: [
     // Guards globaux
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
-    {
-      provide: APP_GUARD,
       useClass: ThrottlerGuard,
-    },
-    // Intercepteurs globaux
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: AuditInterceptor,
     },
   ],
 })

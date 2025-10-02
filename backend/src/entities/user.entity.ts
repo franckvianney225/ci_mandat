@@ -6,8 +6,10 @@ import {
   Index,
   BeforeInsert,
   BeforeUpdate,
+  OneToMany,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
+import { Mandate } from './mandate.entity';
 
 export enum UserRole {
   ADMIN = 'admin',
@@ -67,6 +69,16 @@ export class User {
 
   @Column({ type: 'int', default: 0 })
   loginAttempts: number;
+
+  // Relations avec les mandats
+  @OneToMany(() => Mandate, (mandate) => mandate.client)
+  mandates: Mandate[];
+
+  @OneToMany(() => Mandate, (mandate) => mandate.adminApprover)
+  approvedMandatesAsAdmin: Mandate[];
+
+  @OneToMany(() => Mandate, (mandate) => mandate.superAdminApprover)
+  approvedMandatesAsSuperAdmin: Mandate[];
 
   @BeforeInsert()
   @BeforeUpdate()

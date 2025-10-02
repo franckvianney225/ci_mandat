@@ -1,45 +1,56 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import ClientDetailsModal from "./ClientDetailsModal";
 import ValidateConfirm from "./ValidateConfirm";
 import RejectConfirm from "./RejectConfirm";
+import { apiClient } from "@/lib/api";
 
 interface Request {
-  id: number;
+  id: string;
   nom: string;
   prenom: string;
   email: string;
   telephone: string;
-  departement: string;
+  circonscription: string;
   status: "pending" | "validated" | "rejected";
-  date: string;
+  createdAt: string;
+  referenceNumber: string;
 }
 
+interface MandateData {
+  id: string;
+  formData: {
+    nom: string;
+    prenom: string;
+    email: string;
+    telephone: string;
+    circonscription: string;
+  };
+  status: string;
+  createdAt: string;
+  referenceNumber: string;
+}
+
+// Fonction pour convertir les statuts backend en statuts frontend
+const mapBackendStatusToFrontend = (backendStatus: string): "pending" | "validated" | "rejected" => {
+  switch (backendStatus) {
+    case "pending_validation":
+      return "pending";
+    case "admin_approved":
+    case "super_admin_approved":
+      return "validated";
+    case "rejected":
+      return "rejected";
+    default:
+      return "pending";
+  }
+};
+
 export default function RequestsManagement() {
-  // Données simulées
-  const allRequests: Request[] = [
-    { id: 1, nom: "Dupont", prenom: "Jean", email: "jean.dupont@email.com", telephone: "+33 1 23 45 67 89", departement: "X", status: "pending", date: "2024-01-15" },
-    { id: 2, nom: "Smith", prenom: "Marie", email: "marie.smith@email.com", telephone: "+33 1 23 45 67 90", departement: "Y", status: "validated", date: "2024-01-14" },
-    { id: 3, nom: "Martin", prenom: "Pierre", email: "pierre.martin@email.com", telephone: "+33 1 23 45 67 91", departement: "Z", status: "rejected", date: "2024-01-13" },
-    { id: 4, nom: "Bernard", prenom: "Sophie", email: "sophie.bernard@email.com", telephone: "+33 1 23 45 67 92", departement: "X", status: "pending", date: "2024-01-12" },
-    { id: 5, nom: "Dubois", prenom: "Luc", email: "luc.dubois@email.com", telephone: "+33 1 23 45 67 93", departement: "Y", status: "validated", date: "2024-01-11" },
-    { id: 6, nom: "Moreau", prenom: "Alice", email: "alice.moreau@email.com", telephone: "+33 1 23 45 67 94", departement: "Z", status: "pending", date: "2024-01-10" },
-    { id: 7, nom: "Laurent", prenom: "Paul", email: "paul.laurent@email.com", telephone: "+33 1 23 45 67 95", departement: "X", status: "validated", date: "2024-01-09" },
-    { id: 8, nom: "Simon", prenom: "Julie", email: "julie.simon@email.com", telephone: "+33 1 23 45 67 96", departement: "Y", status: "rejected", date: "2024-01-08" },
-    { id: 9, nom: "Michel", prenom: "Thomas", email: "thomas.michel@email.com", telephone: "+33 1 23 45 67 97", departement: "Z", status: "pending", date: "2024-01-07" },
-    { id: 10, nom: "Garcia", prenom: "Isabelle", email: "isabelle.garcia@email.com", telephone: "+33 1 23 45 67 98", departement: "X", status: "validated", date: "2024-01-06" },
-    { id: 11, nom: "Robert", prenom: "David", email: "david.robert@email.com", telephone: "+33 1 23 45 67 99", departement: "Y", status: "pending", date: "2024-01-05" },
-    { id: 12, nom: "Richard", prenom: "Catherine", email: "catherine.richard@email.com", telephone: "+33 1 23 45 68 00", departement: "Z", status: "validated", date: "2024-01-04" },
-    { id: 13, nom: "Durand", prenom: "Nicolas", email: "nicolas.durand@email.com", telephone: "+33 1 23 45 68 01", departement: "X", status: "rejected", date: "2024-01-03" },
-    { id: 14, nom: "Leroy", prenom: "Sandrine", email: "sandrine.leroy@email.com", telephone: "+33 1 23 45 68 02", departement: "Y", status: "pending", date: "2024-01-02" },
-    { id: 15, nom: "Morel", prenom: "François", email: "francois.morel@email.com", telephone: "+33 1 23 45 68 03", departement: "Z", status: "validated", date: "2024-01-01" },
-    { id: 16, nom: "Fournier", prenom: "Elodie", email: "elodie.fournier@email.com", telephone: "+33 1 23 45 68 04", departement: "X", status: "pending", date: "2023-12-31" },
-    { id: 17, nom: "Girard", prenom: "Philippe", email: "philippe.girard@email.com", telephone: "+33 1 23 45 68 05", departement: "Y", status: "validated", date: "2023-12-30" },
-    { id: 18, nom: "Bonnet", prenom: "Valérie", email: "valerie.bonnet@email.com", telephone: "+33 1 23 45 68 06", departement: "Z", status: "rejected", date: "2023-12-29" },
-    { id: 19, nom: "Roux", prenom: "Guillaume", email: "guillaume.roux@email.com", telephone: "+33 1 23 45 68 07", departement: "X", status: "pending", date: "2023-12-28" },
-    { id: 20, nom: "Vincent", prenom: "Caroline", email: "caroline.vincent@email.com", telephone: "+33 1 23 45 68 08", departement: "Y", status: "validated", date: "2023-12-27" },
-  ];
+  const [allRequests, setAllRequests] = useState<Request[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
@@ -53,6 +64,42 @@ export default function RequestsManagement() {
   const [pendingActionRequest, setPendingActionRequest] = useState<Request | null>(null);
   const itemsPerPage = 15;
 
+  // Charger les mandats depuis l'API
+  useEffect(() => {
+    const loadMandates = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiClient.getMandates();
+        
+        if (response.success && response.data) {
+          // Transformer les données de l'API en format Request avec mapping des statuts
+          const mandates = response.data.data.map((mandate: MandateData) => ({
+            id: mandate.id,
+            nom: mandate.formData.nom,
+            prenom: mandate.formData.prenom,
+            email: mandate.formData.email,
+            telephone: mandate.formData.telephone,
+            circonscription: mandate.formData.circonscription,
+            status: mapBackendStatusToFrontend(mandate.status) as "pending" | "validated" | "rejected",
+            createdAt: mandate.createdAt,
+            referenceNumber: mandate.referenceNumber
+          }));
+          
+          setAllRequests(mandates);
+        } else {
+          setError(response.error || "Erreur lors du chargement des mandats");
+        }
+      } catch (err) {
+        console.error("Erreur lors du chargement des mandats:", err);
+        setError("Erreur de connexion au serveur");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadMandates();
+  }, []);
+
   // Filtrage des données
   const filteredRequests = useMemo(() => {
     return allRequests.filter(request => {
@@ -62,7 +109,7 @@ export default function RequestsManagement() {
         request.email.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus = statusFilter === "all" || request.status === statusFilter;
-      const matchesDepartment = departmentFilter === "all" || request.departement === departmentFilter;
+      const matchesDepartment = departmentFilter === "all" || request.circonscription === departmentFilter;
       
       // Filtre par mode de vue (toggle)
       const matchesViewMode = viewMode === "new"
@@ -71,7 +118,7 @@ export default function RequestsManagement() {
 
       return matchesSearch && matchesStatus && matchesDepartment && matchesViewMode;
     });
-  }, [searchTerm, statusFilter, departmentFilter, viewMode]);
+  }, [searchTerm, statusFilter, departmentFilter, viewMode, allRequests]);
 
   // Pagination
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
@@ -133,9 +180,33 @@ export default function RequestsManagement() {
     setCurrentPage(page);
   };
 
-  const handleStatusChange = (requestId: number, newStatus: "pending" | "validated" | "rejected") => {
-    // En production, vous appelleriez une API ici
-    console.log(`Changement de statut pour la demande ${requestId}: ${newStatus}`);
+  const handleStatusChange = async (requestId: string, newStatus: "admin_approved" | "rejected") => {
+    try {
+      if (newStatus === "admin_approved") {
+        await apiClient.validateMandateByAdmin(requestId);
+      } else if (newStatus === "rejected") {
+        await apiClient.rejectMandate(requestId, "Rejeté par l'administrateur");
+      }
+      
+      // Recharger les données après modification
+      const response = await apiClient.getMandates();
+      if (response.success && response.data) {
+        const mandates = response.data.data.map((mandate: MandateData) => ({
+          id: mandate.id,
+          nom: mandate.formData.nom,
+          prenom: mandate.formData.prenom,
+          email: mandate.formData.email,
+          telephone: mandate.formData.telephone,
+          circonscription: mandate.formData.circonscription,
+          status: mapBackendStatusToFrontend(mandate.status) as "pending" | "validated" | "rejected",
+          createdAt: mandate.createdAt,
+          referenceNumber: mandate.referenceNumber
+        }));
+        setAllRequests(mandates);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la modification du statut:", error);
+    }
   };
 
   const handleValidateClick = (request: Request) => {
@@ -150,7 +221,7 @@ export default function RequestsManagement() {
 
   const handleConfirmValidate = () => {
     if (pendingActionRequest) {
-      handleStatusChange(pendingActionRequest.id, "validated");
+      handleStatusChange(pendingActionRequest.id, "admin_approved");
       setIsValidateConfirmOpen(false);
       setPendingActionRequest(null);
     }
@@ -362,11 +433,11 @@ export default function RequestsManagement() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                      Département {request.departement}
+                      {request.circonscription}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(request.date).toLocaleDateString('fr-FR')}
+                    {new Date(request.createdAt).toLocaleDateString('fr-FR')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-full border ${getStatusClasses(request.status)}`}>
@@ -466,7 +537,15 @@ export default function RequestsManagement() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         request={selectedRequest}
-        onStatusChange={handleStatusChange}
+        onStatusChange={(requestId: number, newStatus: "pending" | "validated" | "rejected") => {
+          // Convertir les types pour la compatibilité
+          if (newStatus === "validated") {
+            handleStatusChange(requestId.toString(), "admin_approved");
+          } else if (newStatus === "rejected") {
+            handleStatusChange(requestId.toString(), "rejected");
+          }
+          // Ignorer le statut "pending" car il ne peut pas être changé vers pending
+        }}
       />
 
       {/* Modal de confirmation pour la validation */}
@@ -477,7 +556,7 @@ export default function RequestsManagement() {
         requestInfo={pendingActionRequest ? {
           nom: pendingActionRequest.nom,
           prenom: pendingActionRequest.prenom,
-          id: pendingActionRequest.id
+          id: parseInt(pendingActionRequest.id)
         } : null}
       />
 
@@ -489,7 +568,7 @@ export default function RequestsManagement() {
         requestInfo={pendingActionRequest ? {
           nom: pendingActionRequest.nom,
           prenom: pendingActionRequest.prenom,
-          id: pendingActionRequest.id
+          id: parseInt(pendingActionRequest.id)
         } : null}
       />
     </div>

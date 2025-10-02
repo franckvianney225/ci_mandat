@@ -1,7 +1,7 @@
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import { User, UserRole, UserStatus } from '../../entities/user.entity';
-interface LoginResponse {
+export interface LoginResponse {
     access_token: string;
     user: {
         id: string;
@@ -34,4 +34,3 @@ export declare class AuthService {
     validateToken(userId: string): Promise<User>;
     changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void>;
 }
-export {};

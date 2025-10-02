@@ -25,11 +25,11 @@ export class Mandate {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, (user) => user.mandates, { nullable: false })
+  @ManyToOne(() => User, (user) => user.mandates, { nullable: true })
   @Index()
   client: User;
 
-  @Column()
+  @Column({ nullable: true })
   clientId: string;
 
   @ManyToOne(() => User, (user) => user.approvedMandatesAsAdmin, { nullable: true })
@@ -59,11 +59,12 @@ export class Mandate {
     // Données flexibles du formulaire
     nom: string;
     prenom: string;
+    fonction: string;
     email: string;
     telephone: string;
-    departement: string;
+    circonscription: string;
     // Champs supplémentaires selon le type de mandat
-    [key: string]: any;
+    [key: string]: unknown;
   };
 
   @Column({

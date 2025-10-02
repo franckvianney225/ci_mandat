@@ -30,11 +30,11 @@ async function bootstrap() {
   // Parser des cookies
   app.use(cookieParser());
 
-  // Validation globale des données
+  // Validation globale des données (simplifiée pour le débogage)
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false, // Désactivé temporairement
       transform: true,
       transformOptions: {
         enableImplicitConversion: true,

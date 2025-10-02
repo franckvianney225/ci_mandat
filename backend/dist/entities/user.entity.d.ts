@@ -1,3 +1,4 @@
+import { Mandate } from './mandate.entity';
 export declare enum UserRole {
     ADMIN = "admin",
     SUPER_ADMIN = "super_admin"
@@ -23,6 +24,9 @@ export declare class User {
     createdAt: string;
     lastLogin: string;
     loginAttempts: number;
+    mandates: Mandate[];
+    approvedMandatesAsAdmin: Mandate[];
+    approvedMandatesAsSuperAdmin: Mandate[];
     validateEmail(): void;
     getFullName(): string;
     toJSON(): Omit<this, "passwordHash" | "validateEmail" | "getFullName" | "toJSON">;
