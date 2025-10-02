@@ -10,7 +10,7 @@ interface Request {
   email: string;
   telephone: string;
   departement: string;
-  status: "pending" | "processed" | "error";
+  status: "pending" | "validated" | "rejected";
   date: string;
 }
 
@@ -62,7 +62,7 @@ export default function RequestsManagement() {
       // Filtre par mode de vue (toggle)
       const matchesViewMode = viewMode === "new"
         ? request.status === "pending"
-        : request.status === "processed";
+        : request.status === "validated";
 
       return matchesSearch && matchesStatus && matchesDepartment && matchesViewMode;
     });
@@ -77,9 +77,9 @@ export default function RequestsManagement() {
     switch (status) {
       case "pending":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "processed":
+      case "validated":
         return "bg-green-100 text-green-800 border-green-200";
-      case "error":
+      case "rejected":
         return "bg-red-100 text-red-800 border-red-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
@@ -90,10 +90,10 @@ export default function RequestsManagement() {
     switch (status) {
       case "pending":
         return "En attente";
-      case "processed":
-        return "Traité";
-      case "error":
-        return "Erreur";
+      case "validated":
+        return "Validé";
+      case "rejected":
+        return "Rejeté";
       default:
         return "Inconnu";
     }
@@ -128,7 +128,7 @@ export default function RequestsManagement() {
     setCurrentPage(page);
   };
 
-  const handleStatusChange = (requestId: number, newStatus: "pending" | "processed" | "error") => {
+  const handleStatusChange = (requestId: number, newStatus: "pending" | "validated" | "rejected") => {
     // En production, vous appelleriez une API ici
     console.log(`Changement de statut pour la demande ${requestId}: ${newStatus}`);
   };
