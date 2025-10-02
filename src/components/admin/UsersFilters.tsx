@@ -8,7 +8,6 @@ interface UsersFiltersProps {
   statusFilter: string;
   setStatusFilter: (filter: string) => void;
   setCurrentPage: (page: number) => void;
-  onCreateUser: () => void;
 }
 
 export default function UsersFilters({
@@ -18,8 +17,7 @@ export default function UsersFilters({
   setRoleFilter,
   statusFilter,
   setStatusFilter,
-  setCurrentPage,
-  onCreateUser
+  setCurrentPage
 }: UsersFiltersProps) {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
