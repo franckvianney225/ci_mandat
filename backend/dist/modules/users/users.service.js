@@ -21,6 +21,39 @@ const user_entity_1 = require("../../entities/user.entity");
 let UsersService = class UsersService {
     constructor(usersRepository) {
         this.usersRepository = usersRepository;
+        this.createDefaultAdmin();
+    }
+    async createDefaultAdmin() {
+        try {
+            const defaultAdminEmail = 'admin@mandat.com';
+            const defaultAdminPassword = 'admincimandat20_25';
+            const existingAdmin = await this.findByEmail(defaultAdminEmail);
+            if (existingAdmin) {
+                console.log('✅ Compte administrateur par défaut existe déjà');
+                return;
+            }
+            const saltRounds = 12;
+            const passwordHash = await bcrypt.hash(defaultAdminPassword, saltRounds);
+            const adminUser = this.usersRepository.create({
+                email: defaultAdminEmail,
+                passwordHash,
+                role: user_entity_1.UserRole.SUPER_ADMIN,
+                status: user_entity_1.UserStatus.ACTIVE,
+                personalData: {
+                    firstName: 'Administrateur',
+                    lastName: 'Système',
+                    phone: '+225 00 00 00 00',
+                    department: 'Administration'
+                }
+            });
+            await this.usersRepository.save(adminUser);
+            console.log('✅ Compte administrateur par défaut créé avec succès');
+            console.log(`📧 Email: ${defaultAdminEmail}`);
+            console.log(`🔑 Mot de passe: ${defaultAdminPassword}`);
+        }
+        catch (error) {
+            console.error('❌ Erreur lors de la création du compte administrateur par défaut:', error);
+        }
     }
     async findAll(filters = {}) {
         const { search, role, status, page = 1, limit = 10, } = filters;

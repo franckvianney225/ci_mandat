@@ -26,11 +26,30 @@ let AuthService = class AuthService {
     }
     async validateUser(email, password) {
         const user = await this.usersRepository.findOne({ where: { email } });
+        console.log('🔍 Recherche utilisateur avec email:', email);
+        console.log('👤 Utilisateur trouvé:', user ? {
+            id: user.id,
+            email: user.email,
+            hasPasswordHash: !!user.passwordHash,
+            passwordHashLength: user.passwordHash?.length
+        } : 'Aucun utilisateur trouvé');
         if (!user) {
             throw new common_1.UnauthorizedException('Email ou mot de passe incorrect');
         }
         if (user.status === user_entity_1.UserStatus.SUSPENDED) {
             throw new common_1.UnauthorizedException('Compte suspendu');
+        }
+        if (!user.passwordHash) {
+            console.error('❌ Hash du mot de passe vide pour l\'utilisateur:', user.email);
+            throw new common_1.UnauthorizedException('Compte mal configuré - contactez l\'administrateur');
+        }
+        console.log('🔑 Tentative de comparaison du mot de passe...');
+        console.log('📧 Email reçu:', email);
+        console.log('🔐 Mot de passe reçu:', password ? '***' : 'VIDE');
+        console.log('🔑 Hash stocké:', user.passwordHash ? '***' : 'VIDE');
+        if (!password) {
+            console.error('❌ Mot de passe vide reçu');
+            throw new common_1.UnauthorizedException('Mot de passe requis');
         }
         const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
         if (!isPasswordValid) {

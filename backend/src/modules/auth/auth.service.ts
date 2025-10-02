@@ -36,6 +36,14 @@ export class AuthService {
   async validateUser(email: string, password: string): Promise<User> {
     const user = await this.usersRepository.findOne({ where: { email } });
 
+    console.log('🔍 Recherche utilisateur avec email:', email);
+    console.log('👤 Utilisateur trouvé:', user ? {
+      id: user.id,
+      email: user.email,
+      hasPasswordHash: !!user.passwordHash,
+      passwordHashLength: user.passwordHash?.length
+    } : 'Aucun utilisateur trouvé');
+
     if (!user) {
       throw new UnauthorizedException('Email ou mot de passe incorrect');
     }
@@ -43,6 +51,23 @@ export class AuthService {
     // Vérifier si le compte est suspendu
     if (user.status === UserStatus.SUSPENDED) {
       throw new UnauthorizedException('Compte suspendu');
+    }
+
+    // Vérifier que le hash du mot de passe n'est pas vide
+    if (!user.passwordHash) {
+      console.error('❌ Hash du mot de passe vide pour l\'utilisateur:', user.email);
+      throw new UnauthorizedException('Compte mal configuré - contactez l\'administrateur');
+    }
+
+    console.log('🔑 Tentative de comparaison du mot de passe...');
+    console.log('📧 Email reçu:', email);
+    console.log('🔐 Mot de passe reçu:', password ? '***' : 'VIDE');
+    console.log('🔑 Hash stocké:', user.passwordHash ? '***' : 'VIDE');
+    
+    // Vérifier que le mot de passe n'est pas vide
+    if (!password) {
+      console.error('❌ Mot de passe vide reçu');
+      throw new UnauthorizedException('Mot de passe requis');
     }
 
     // Vérifier le mot de passe

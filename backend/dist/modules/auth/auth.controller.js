@@ -16,8 +16,19 @@ exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
+const class_validator_1 = require("class-validator");
 class LoginDto {
 }
+__decorate([
+    (0, class_validator_1.IsEmail)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], LoginDto.prototype, "email", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], LoginDto.prototype, "password", void 0);
 class RegisterDto {
 }
 class ChangePasswordDto {
@@ -27,6 +38,9 @@ let AuthController = class AuthController {
         this.authService = authService;
     }
     async login(loginDto) {
+        console.log('📨 Requête de login reçue:', loginDto);
+        console.log('📧 Email dans DTO:', loginDto.email);
+        console.log('🔐 Mot de passe dans DTO:', loginDto.password ? '***' : 'VIDE');
         return this.authService.login(loginDto.email, loginDto.password);
     }
     async register(registerDto) {

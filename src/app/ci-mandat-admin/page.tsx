@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiClient } from "@/lib/api";
 
 export default function AdminLogin() {
   const [credentials, setCredentials] = useState({
-    username: "",
+    email: "",
     password: ""
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -26,20 +27,31 @@ export default function AdminLogin() {
     setIsLoading(true);
     setError("");
 
-    // Simulation d'authentification
-    // En production, vous devrez appeler votre API d'authentification
     try {
-      // Ici vous devrez implémenter la vraie logique d'authentification
-      if (credentials.username === "admin" && credentials.password === "admin123") {
-        // Stocker le token d'authentification (en production, utilisez un token JWT sécurisé)
-        localStorage.setItem("adminToken", "authenticated");
+      // Authentification réelle avec l'API backend
+      const response = await apiClient.login({
+        email: credentials.email,
+        password: credentials.password
+      });
+
+      if (response.success && response.data) {
+        // Stocker le token JWT sécurisé
+        localStorage.setItem("adminToken", response.data.access_token);
         // Redirection vers le tableau de bord d'administration
         router.push("/ci-mandat-admin/dashboard");
       } else {
-        setError("Nom d&apos;utilisateur ou mot de passe incorrect");
+        setError("Email ou mot de passe incorrect");
       }
-    } catch (err) {
-      setError("Erreur de connexion. Veuillez réessayer.");
+    } catch (err: unknown) {
+      console.error("Erreur d'authentification:", err);
+      const error = err as { status?: number };
+      if (error.status === 401) {
+        setError("Email ou mot de passe incorrect");
+      } else if (error.status === 403) {
+        setError("Compte suspendu ou non autorisé");
+      } else {
+        setError("Erreur de connexion au serveur. Veuillez réessayer.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -72,20 +84,20 @@ export default function AdminLogin() {
               </div>
             )}
 
-            {/* Nom d&apos;utilisateur */}
+            {/* Email */}
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                Nom dutilisateur
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email
               </label>
               <input
-                type="text"
-                id="username"
-                name="username"
-                value={credentials.username}
+                type="email"
+                id="email"
+                name="email"
+                value={credentials.email}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 transition-colors"
-                placeholder="Entrez votre nom d'utilisateur"
+                placeholder="Entrez votre email"
               />
             </div>
 
@@ -139,8 +151,8 @@ export default function AdminLogin() {
           <details className="text-xs text-gray-500">
             <summary className="cursor-pointer">Informations de test</summary>
             <div className="mt-2 p-3 bg-gray-100 rounded-lg">
-              <p><strong>Utilisateur:</strong> admin</p>
-              <p><strong>Mot de passe:</strong> admin123</p>
+              <p><strong>Email:</strong> admin@mandat.com</p>
+              <p><strong>Mot de passe:</strong> admincimandat20_25</p>
             </div>
           </details>
         </div>

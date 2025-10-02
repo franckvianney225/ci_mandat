@@ -12,8 +12,15 @@ import { AuthService, LoginResponse } from './auth.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { UserRole } from '../../entities/user.entity';
 
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+
 class LoginDto {
+  @IsEmail()
+  @IsNotEmpty()
   email: string;
+
+  @IsString()
+  @IsNotEmpty()
   password: string;
 }
 
@@ -41,6 +48,9 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto): Promise<LoginResponse> {
+    console.log('📨 Requête de login reçue:', loginDto);
+    console.log('📧 Email dans DTO:', loginDto.email);
+    console.log('🔐 Mot de passe dans DTO:', loginDto.password ? '***' : 'VIDE');
     return this.authService.login(loginDto.email, loginDto.password);
   }
 
