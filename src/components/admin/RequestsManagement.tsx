@@ -209,7 +209,7 @@ export default function RequestsManagement() {
                   setCurrentPage(1);
                 }}
                 placeholder="Rechercher par nom, prénom ou email..."
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white transition-all duration-200 placeholder-gray-400 text-gray-900"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] focus:bg-white transition-all duration-200 placeholder-gray-400 text-gray-900"
               />
             </div>
           </div>
@@ -229,7 +229,7 @@ export default function RequestsManagement() {
                     setStatusFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="block w-full pl-3 pr-10 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white transition-all duration-200 appearance-none text-gray-900"
+                  className="block w-full pl-3 pr-10 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] focus:bg-white transition-all duration-200 appearance-none text-gray-900"
                 >
                   <option value="all">Tous les statuts</option>
                   <option value="pending">En attente</option>
@@ -257,7 +257,7 @@ export default function RequestsManagement() {
                     setDepartmentFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="block w-full pl-3 pr-10 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white transition-all duration-200 appearance-none text-gray-900"
+                  className="block w-full pl-3 pr-10 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] focus:bg-white transition-all duration-200 appearance-none text-gray-900"
                 >
                   <option value="all">Tous les départements</option>
                   <option value="X">Département X</option>
@@ -285,7 +285,7 @@ export default function RequestsManagement() {
               onClick={() => setViewMode("new")}
               className={`px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-200 ${
                 viewMode === "new"
-                  ? "bg-orange-500 text-white shadow-md"
+                  ? "bg-[#FF8200] text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-200"
               }`}
             >
@@ -295,7 +295,7 @@ export default function RequestsManagement() {
               onClick={() => setViewMode("validated")}
               className={`px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-200 ${
                 viewMode === "validated"
-                  ? "bg-orange-500 text-white shadow-md"
+                  ? "bg-[#FF8200] text-white shadow-md"
                   : "bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-200"
               }`}
             >
@@ -343,7 +343,7 @@ export default function RequestsManagement() {
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-sm">
+                      <div className="h-12 w-12 rounded-full bg-[#FF8200] flex items-center justify-center shadow-sm">
                         <span className="text-sm font-semibold text-white">
                           {request.prenom[0]}{request.nom[0]}
                         </span>
@@ -437,7 +437,7 @@ export default function RequestsManagement() {
                     onClick={() => handlePageChange(page)}
                     className={`px-4 py-2 border rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 ${
                       currentPage === page
-                        ? "border-orange-500 bg-orange-500 text-white shadow-md"
+                        ? "border-[#FF8200] bg-[#FF8200] text-white shadow-md"
                         : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
                     }`}
                   >

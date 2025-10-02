@@ -6,6 +6,7 @@ import Sidebar from "@/components/admin/Sidebar";
 import Statistics from "@/components/admin/Statistics";
 import RecentRequests from "@/components/admin/RecentRequests";
 import RequestsManagement from "@/components/admin/RequestsManagement";
+import UsersManagement from "@/components/admin/UsersManagement";
 
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -40,12 +41,7 @@ export default function AdminDashboard() {
       case "requests":
         return <RequestsManagement />;
       case "users":
-        return (
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Gestion des utilisateurs</h2>
-            <p className="text-gray-600">Interface de gestion des utilisateurs en cours de développement.</p>
-          </div>
-        );
+        return <UsersManagement />;
       case "settings":
         return (
           <div className="bg-white shadow rounded-lg p-6">

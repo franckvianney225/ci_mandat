@@ -1,0 +1,144 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { JwtModule } from '@nestjs/jwt';
+import * as Joi from 'joi';
+
+// Configuration
+import typeOrmConfig from './config/database.config';
+
+// Modules
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { MandatesModule } from './modules/mandates/mandates.module';
+import { SecurityModule } from './modules/security/security.module';
+import { EmailModule } from './modules/email/email.module';
+
+// Guards et Intercepteurs
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { RolesGuard } from './common/guards/roles.guard';
+import { AuditInterceptor } from './common/interceptors/audit.interceptor';
+
+@Module({
+  imports: [
+    // Configuration de l'environnement
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
+      validationSchema: Joi.object({
+        // Environnement
+        NODE_ENV: Joi.string()
+          .valid('development', 'production', 'test')
+          .default('development'),
+        PORT: Joi.number().default(3001),
+
+        // Base de données
+        DATABASE_URL: Joi.string().required(),
+
+        // Authentification JWT
+        JWT_ACCESS_SECRET: Joi.string().required().min(32),
+        JWT_REFRESH_SECRET: Joi.string().required().min(32),
+        JWT_ACCESS_EXPIRES: Joi.string().default('15m'),
+        JWT_REFRESH_EXPIRES: Joi.string().default('7d'),
+
+        // Chiffrement
+        ENCRYPTION_KEY: Joi.string().required().length(64),
+        DATA_ENCRYPTION_IV: Joi.string().required().length(32),
+
+        // Email
+        SMTP_HOST: Joi.string().required(),
+        SMTP_PORT: Joi.number().required(),
+        SMTP_USER: Joi.string().required(),
+        SMTP_PASS: Joi.string().required(),
+        EMAIL_FROM: Joi.string().email().required(),
+
+        // Sécurité
+        ALLOWED_ORIGINS: Joi.string().default('http://localhost:3000'),
+        RATE_LIMIT_WINDOW: Joi.number().default(900000),
+        MAX_LOGIN_ATTEMPTS: Joi.number().default(5),
+        SESSION_TIMEOUT: Joi.number().default(3600000),
+
+        // URLs
+        FRONTEND_URL: Joi.string().uri().required(),
+        BACKEND_URL: Joi.string().uri().required(),
+
+        // Logging
+        LOG_LEVEL: Joi.string()
+          .valid('error', 'warn', 'info', 'debug')
+          .default('info'),
+      }),
+      validationOptions: {
+        allowUnknown: true,
+        abortEarly: false,
+      },
+    }),
+
+    // Rate Limiting
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => [
+        {
+          ttl: config.get<number>('RATE_LIMIT_WINDOW', 900000),
+          limit: 100, // 100 requêtes par fenêtre
+        },
+      ],
+    }),
+
+    // Base de données
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        ...typeOrmConfig,
+        url: config.get<string>('DATABASE_URL'),
+        synchronize: config.get<string>('NODE_ENV') === 'development',
+        logging: config.get<string>('NODE_ENV') === 'development',
+      }),
+    }),
+
+    // JWT Module
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_ACCESS_SECRET'),
+        signOptions: {
+          expiresIn: config.get<string>('JWT_ACCESS_EXPIRES', '15m'),
+          issuer: 'ci-mandat-app',
+          audience: 'ci-mandat-users',
+        },
+      }),
+    }),
+
+    // Modules fonctionnels
+    AuthModule,
+    UsersModule,
+    MandatesModule,
+    SecurityModule,
+    EmailModule,
+  ],
+  providers: [
+    // Guards globaux
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+    // Intercepteurs globaux
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
+    },
+  ],
+})
+export class AppModule {}
