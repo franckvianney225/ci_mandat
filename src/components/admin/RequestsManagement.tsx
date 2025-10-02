@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import ClientDetailsModal from "./ClientDetailsModal";
 
 interface Request {
   id: number;
@@ -43,6 +44,8 @@ export default function RequestsManagement() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"new" | "validated">("new");
+  const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const itemsPerPage = 15;
 
   // Filtrage des données
@@ -130,6 +133,16 @@ export default function RequestsManagement() {
     console.log(`Changement de statut pour la demande ${requestId}: ${newStatus}`);
   };
 
+  const handleRequestClick = (request: Request) => {
+    setSelectedRequest(request);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedRequest(null);
+  };
+
   return (
     <div className="space-y-6">
       {/* Barre de recherche et filtres améliorée */}
@@ -180,7 +193,7 @@ export default function RequestsManagement() {
                   <option value="all">Tous les statuts</option>
                   <option value="pending">En attente</option>
                   <option value="processed">Traité</option>
-                  <option value="error">Erreur</option>
+                  <option value="error">Rejeter</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -221,40 +234,38 @@ export default function RequestsManagement() {
         </div>
       </div>
 
-      {/* Toggle Nouvelle demande / Validée */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-        <div className="flex justify-center">
-          <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+      {/* Tableau des demandes */}
+      <div className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+        {/* En-tête avec toggle moderne */}
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50 flex items-center justify-between">
+          {/* Toggle Nouvelle demande / Validée - design moderne */}
+          <div className="flex space-x-1">
             <button
               onClick={() => setViewMode("new")}
-              className={`px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+              className={`px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-200 ${
                 viewMode === "new"
-                  ? "bg-white text-orange-600 shadow-sm border border-gray-200"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-orange-500 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-200"
               }`}
             >
               Nouvelle demande
             </button>
             <button
               onClick={() => setViewMode("validated")}
-              className={`px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+              className={`px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-200 ${
                 viewMode === "validated"
-                  ? "bg-white text-orange-600 shadow-sm border border-gray-200"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "bg-orange-500 text-white shadow-md"
+                  : "bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-200"
               }`}
             >
               Validée
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Tableau des demandes */}
-      <div className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {viewMode === "new" ? "Nouvelles demandes" : "Demandes validées"} ({filteredRequests.length})
-          </h3>
+          
+          {/* Compteur à droite */}
+          <div className="text-sm text-gray-600">
+            {filteredRequests.length} {filteredRequests.length === 1 ? 'demande' : 'demandes'}
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -262,7 +273,7 @@ export default function RequestsManagement() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Utilisateur
+                  Nom et Prenoms
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Contact
@@ -285,8 +296,9 @@ export default function RequestsManagement() {
               {currentRequests.map((request, index) => (
                 <tr
                   key={request.id}
-                  className="hover:bg-gray-50 transition-colors duration-150 ease-in-out"
+                  className="hover:bg-gray-50 transition-colors duration-150 ease-in-out cursor-pointer"
                   style={{ animationDelay: `${index * 50}ms` }}
+                  onClick={() => handleRequestClick(request)}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -401,6 +413,13 @@ export default function RequestsManagement() {
           </div>
         )}
       </div>
+
+      {/* Modal des détails client */}
+      <ClientDetailsModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        request={selectedRequest}
+      />
     </div>
   );
 }
