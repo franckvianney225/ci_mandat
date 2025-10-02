@@ -16,12 +16,7 @@ declare class UpdateUserDto {
     email?: string;
     role?: UserRole;
     status?: UserStatus;
-    personalData?: {
-        firstName?: string;
-        lastName?: string;
-        phone?: string;
-        department?: string;
-    };
+    personalData?: PersonalDataDto;
 }
 declare class UserFiltersDto {
     search?: string;

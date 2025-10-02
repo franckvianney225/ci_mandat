@@ -58,15 +58,22 @@ class CreateUserDto {
 }
 
 class UpdateUserDto {
+  @IsOptional()
+  @IsEmail()
   email?: string;
+
+  @IsOptional()
+  @IsEnum(UserRole)
   role?: UserRole;
+
+  @IsOptional()
+  @IsEnum(UserStatus)
   status?: UserStatus;
-  personalData?: {
-    firstName?: string;
-    lastName?: string;
-    phone?: string;
-    department?: string;
-  };
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PersonalDataDto)
+  personalData?: PersonalDataDto;
 }
 
 class UserFiltersDto {
@@ -109,6 +116,7 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
