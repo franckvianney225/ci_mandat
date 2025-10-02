@@ -18,25 +18,25 @@ export default function RequestsManagement() {
   // Données simulées
   const allRequests: Request[] = [
     { id: 1, nom: "Dupont", prenom: "Jean", email: "jean.dupont@email.com", telephone: "+33 1 23 45 67 89", departement: "X", status: "pending", date: "2024-01-15" },
-    { id: 2, nom: "Smith", prenom: "Marie", email: "marie.smith@email.com", telephone: "+33 1 23 45 67 90", departement: "Y", status: "processed", date: "2024-01-14" },
-    { id: 3, nom: "Martin", prenom: "Pierre", email: "pierre.martin@email.com", telephone: "+33 1 23 45 67 91", departement: "Z", status: "error", date: "2024-01-13" },
+    { id: 2, nom: "Smith", prenom: "Marie", email: "marie.smith@email.com", telephone: "+33 1 23 45 67 90", departement: "Y", status: "validated", date: "2024-01-14" },
+    { id: 3, nom: "Martin", prenom: "Pierre", email: "pierre.martin@email.com", telephone: "+33 1 23 45 67 91", departement: "Z", status: "rejected", date: "2024-01-13" },
     { id: 4, nom: "Bernard", prenom: "Sophie", email: "sophie.bernard@email.com", telephone: "+33 1 23 45 67 92", departement: "X", status: "pending", date: "2024-01-12" },
-    { id: 5, nom: "Dubois", prenom: "Luc", email: "luc.dubois@email.com", telephone: "+33 1 23 45 67 93", departement: "Y", status: "processed", date: "2024-01-11" },
+    { id: 5, nom: "Dubois", prenom: "Luc", email: "luc.dubois@email.com", telephone: "+33 1 23 45 67 93", departement: "Y", status: "validated", date: "2024-01-11" },
     { id: 6, nom: "Moreau", prenom: "Alice", email: "alice.moreau@email.com", telephone: "+33 1 23 45 67 94", departement: "Z", status: "pending", date: "2024-01-10" },
-    { id: 7, nom: "Laurent", prenom: "Paul", email: "paul.laurent@email.com", telephone: "+33 1 23 45 67 95", departement: "X", status: "processed", date: "2024-01-09" },
-    { id: 8, nom: "Simon", prenom: "Julie", email: "julie.simon@email.com", telephone: "+33 1 23 45 67 96", departement: "Y", status: "error", date: "2024-01-08" },
+    { id: 7, nom: "Laurent", prenom: "Paul", email: "paul.laurent@email.com", telephone: "+33 1 23 45 67 95", departement: "X", status: "validated", date: "2024-01-09" },
+    { id: 8, nom: "Simon", prenom: "Julie", email: "julie.simon@email.com", telephone: "+33 1 23 45 67 96", departement: "Y", status: "rejected", date: "2024-01-08" },
     { id: 9, nom: "Michel", prenom: "Thomas", email: "thomas.michel@email.com", telephone: "+33 1 23 45 67 97", departement: "Z", status: "pending", date: "2024-01-07" },
-    { id: 10, nom: "Garcia", prenom: "Isabelle", email: "isabelle.garcia@email.com", telephone: "+33 1 23 45 67 98", departement: "X", status: "processed", date: "2024-01-06" },
+    { id: 10, nom: "Garcia", prenom: "Isabelle", email: "isabelle.garcia@email.com", telephone: "+33 1 23 45 67 98", departement: "X", status: "validated", date: "2024-01-06" },
     { id: 11, nom: "Robert", prenom: "David", email: "david.robert@email.com", telephone: "+33 1 23 45 67 99", departement: "Y", status: "pending", date: "2024-01-05" },
-    { id: 12, nom: "Richard", prenom: "Catherine", email: "catherine.richard@email.com", telephone: "+33 1 23 45 68 00", departement: "Z", status: "processed", date: "2024-01-04" },
-    { id: 13, nom: "Durand", prenom: "Nicolas", email: "nicolas.durand@email.com", telephone: "+33 1 23 45 68 01", departement: "X", status: "error", date: "2024-01-03" },
+    { id: 12, nom: "Richard", prenom: "Catherine", email: "catherine.richard@email.com", telephone: "+33 1 23 45 68 00", departement: "Z", status: "validated", date: "2024-01-04" },
+    { id: 13, nom: "Durand", prenom: "Nicolas", email: "nicolas.durand@email.com", telephone: "+33 1 23 45 68 01", departement: "X", status: "rejected", date: "2024-01-03" },
     { id: 14, nom: "Leroy", prenom: "Sandrine", email: "sandrine.leroy@email.com", telephone: "+33 1 23 45 68 02", departement: "Y", status: "pending", date: "2024-01-02" },
-    { id: 15, nom: "Morel", prenom: "François", email: "francois.morel@email.com", telephone: "+33 1 23 45 68 03", departement: "Z", status: "processed", date: "2024-01-01" },
+    { id: 15, nom: "Morel", prenom: "François", email: "francois.morel@email.com", telephone: "+33 1 23 45 68 03", departement: "Z", status: "validated", date: "2024-01-01" },
     { id: 16, nom: "Fournier", prenom: "Elodie", email: "elodie.fournier@email.com", telephone: "+33 1 23 45 68 04", departement: "X", status: "pending", date: "2023-12-31" },
-    { id: 17, nom: "Girard", prenom: "Philippe", email: "philippe.girard@email.com", telephone: "+33 1 23 45 68 05", departement: "Y", status: "processed", date: "2023-12-30" },
-    { id: 18, nom: "Bonnet", prenom: "Valérie", email: "valerie.bonnet@email.com", telephone: "+33 1 23 45 68 06", departement: "Z", status: "error", date: "2023-12-29" },
+    { id: 17, nom: "Girard", prenom: "Philippe", email: "philippe.girard@email.com", telephone: "+33 1 23 45 68 05", departement: "Y", status: "validated", date: "2023-12-30" },
+    { id: 18, nom: "Bonnet", prenom: "Valérie", email: "valerie.bonnet@email.com", telephone: "+33 1 23 45 68 06", departement: "Z", status: "rejected", date: "2023-12-29" },
     { id: 19, nom: "Roux", prenom: "Guillaume", email: "guillaume.roux@email.com", telephone: "+33 1 23 45 68 07", departement: "X", status: "pending", date: "2023-12-28" },
-    { id: 20, nom: "Vincent", prenom: "Caroline", email: "caroline.vincent@email.com", telephone: "+33 1 23 45 68 08", departement: "Y", status: "processed", date: "2023-12-27" },
+    { id: 20, nom: "Vincent", prenom: "Caroline", email: "caroline.vincent@email.com", telephone: "+33 1 23 45 68 08", departement: "Y", status: "validated", date: "2023-12-27" },
   ];
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -107,13 +107,13 @@ export default function RequestsManagement() {
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
           </svg>
         );
-      case "processed":
+      case "validated":
         return (
           <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
         );
-      case "error":
+      case "rejected":
         return (
           <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -192,8 +192,8 @@ export default function RequestsManagement() {
                 >
                   <option value="all">Tous les statuts</option>
                   <option value="pending">En attente</option>
-                  <option value="processed">Traité</option>
-                  <option value="error">Rejeter</option>
+                  <option value="validated">Validé</option>
+                  <option value="rejected">Rejeté</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -336,24 +336,24 @@ export default function RequestsManagement() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => handleStatusChange(request.id, "processed")}
+                        onClick={() => handleStatusChange(request.id, "validated")}
                         className="inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 transform hover:scale-105"
                         title="Marquer comme traité"
                       >
                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
-                        Traiter
+                        Valider
                       </button>
                       <button
-                        onClick={() => handleStatusChange(request.id, "error")}
+                        onClick={() => handleStatusChange(request.id, "rejected")}
                         className="inline-flex items-center px-3 py-2 border border-red-300 text-xs font-medium rounded-lg text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 transform hover:scale-105"
                         title="Marquer comme erreur"
                       >
                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
-                        Erreur
+                        Rejeter
                       </button>
                     </div>
                   </td>

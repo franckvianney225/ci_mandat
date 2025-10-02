@@ -9,7 +9,7 @@ interface Request {
   email: string;
   telephone: string;
   departement: string;
-  status: "pending" | "processed" | "error";
+  status: "pending" | "validated" | "rejected";
   date: string;
 }
 
@@ -26,9 +26,9 @@ export default function ClientDetailsModal({ isOpen, onClose, request }: ClientD
     switch (status) {
       case "pending":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "processed":
+      case "validated":
         return "bg-green-100 text-green-800 border-green-200";
-      case "error":
+      case "rejected":
         return "bg-red-100 text-red-800 border-red-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
@@ -39,10 +39,10 @@ export default function ClientDetailsModal({ isOpen, onClose, request }: ClientD
     switch (status) {
       case "pending":
         return "En attente";
-      case "processed":
-        return "Traité";
-      case "error":
-        return "Erreur";
+      case "validated":
+        return "Validé";
+      case "rejected":
+        return "Rejeté";
       default:
         return "Inconnu";
     }
@@ -56,13 +56,13 @@ export default function ClientDetailsModal({ isOpen, onClose, request }: ClientD
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
           </svg>
         );
-      case "processed":
+      case "validated":
         return (
           <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
         );
-      case "error":
+      case "rejected":
         return (
           <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
