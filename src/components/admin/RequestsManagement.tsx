@@ -42,6 +42,7 @@ export default function RequestsManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"new" | "validated">("new");
   const itemsPerPage = 15;
 
   // Filtrage des données
@@ -54,10 +55,15 @@ export default function RequestsManagement() {
 
       const matchesStatus = statusFilter === "all" || request.status === statusFilter;
       const matchesDepartment = departmentFilter === "all" || request.departement === departmentFilter;
+      
+      // Filtre par mode de vue (toggle)
+      const matchesViewMode = viewMode === "new"
+        ? request.status === "pending"
+        : request.status === "processed";
 
-      return matchesSearch && matchesStatus && matchesDepartment;
+      return matchesSearch && matchesStatus && matchesDepartment && matchesViewMode;
     });
-  }, [searchTerm, statusFilter, departmentFilter]);
+  }, [searchTerm, statusFilter, departmentFilter, viewMode]);
 
   // Pagination
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
@@ -215,11 +221,39 @@ export default function RequestsManagement() {
         </div>
       </div>
 
+      {/* Toggle Nouvelle demande / Validée */}
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex justify-center">
+          <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+            <button
+              onClick={() => setViewMode("new")}
+              className={`px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                viewMode === "new"
+                  ? "bg-white text-orange-600 shadow-sm border border-gray-200"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Nouvelle demande
+            </button>
+            <button
+              onClick={() => setViewMode("validated")}
+              className={`px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                viewMode === "validated"
+                  ? "bg-white text-orange-600 shadow-sm border border-gray-200"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Validée
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Tableau des demandes */}
       <div className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
           <h3 className="text-lg font-semibold text-gray-900">
-            Liste des demandes ({filteredRequests.length})
+            {viewMode === "new" ? "Nouvelles demandes" : "Demandes validées"} ({filteredRequests.length})
           </h3>
         </div>
 
