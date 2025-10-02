@@ -1,6 +1,8 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
+import ValidateConfirm from "./ValidateConfirm";
+import RejectConfirm from "./RejectConfirm";
 
 interface Request {
   id: number;
@@ -17,10 +19,46 @@ interface ClientDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   request: Request | null;
+  onStatusChange?: (requestId: number, newStatus: "pending" | "validated" | "rejected") => void;
 }
 
-export default function ClientDetailsModal({ isOpen, onClose, request }: ClientDetailsModalProps) {
+export default function ClientDetailsModal({ isOpen, onClose, request, onStatusChange }: ClientDetailsModalProps) {
+  const [isValidateConfirmOpen, setIsValidateConfirmOpen] = useState(false);
+  const [isRejectConfirmOpen, setIsRejectConfirmOpen] = useState(false);
+
   if (!isOpen || !request) return null;
+
+  const handleValidateClick = () => {
+    setIsValidateConfirmOpen(true);
+  };
+
+  const handleRejectClick = () => {
+    setIsRejectConfirmOpen(true);
+  };
+
+  const handleConfirmValidate = () => {
+    if (onStatusChange) {
+      onStatusChange(request.id, "validated");
+    }
+    setIsValidateConfirmOpen(false);
+    onClose();
+  };
+
+  const handleConfirmReject = () => {
+    if (onStatusChange) {
+      onStatusChange(request.id, "rejected");
+    }
+    setIsRejectConfirmOpen(false);
+    onClose();
+  };
+
+  const handleCloseValidateConfirm = () => {
+    setIsValidateConfirmOpen(false);
+  };
+
+  const handleCloseRejectConfirm = () => {
+    setIsRejectConfirmOpen(false);
+  };
 
   const getStatusClasses = (status: string) => {
     switch (status) {
@@ -202,14 +240,20 @@ export default function ClientDetailsModal({ isOpen, onClose, request }: ClientD
                 </div>
                 
                 <div className="flex gap-3">
-                  <button className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-lg text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200">
+                  <button
+                    onClick={handleRejectClick}
+                    className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-lg text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
+                  >
                     <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
                     Rejeter
                   </button>
 
-                  <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200">
+                  <button
+                    onClick={handleValidateClick}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
+                  >
                     <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
@@ -221,6 +265,29 @@ export default function ClientDetailsModal({ isOpen, onClose, request }: ClientD
           </div>
         </div>
       </div>
+      {/* Modal de confirmation pour la validation */}
+      <ValidateConfirm
+        isOpen={isValidateConfirmOpen}
+        onClose={handleCloseValidateConfirm}
+        onConfirm={handleConfirmValidate}
+        requestInfo={request ? {
+          nom: request.nom,
+          prenom: request.prenom,
+          id: request.id
+        } : null}
+      />
+
+      {/* Modal de confirmation pour le rejet */}
+      <RejectConfirm
+        isOpen={isRejectConfirmOpen}
+        onClose={handleCloseRejectConfirm}
+        onConfirm={handleConfirmReject}
+        requestInfo={request ? {
+          nom: request.nom,
+          prenom: request.prenom,
+          id: request.id
+        } : null}
+      />
     </Fragment>
   );
 }

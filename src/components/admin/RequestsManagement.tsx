@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import ClientDetailsModal from "./ClientDetailsModal";
+import ValidateConfirm from "./ValidateConfirm";
+import RejectConfirm from "./RejectConfirm";
 
 interface Request {
   id: number;
@@ -46,6 +48,9 @@ export default function RequestsManagement() {
   const [viewMode, setViewMode] = useState<"new" | "validated">("new");
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isValidateConfirmOpen, setIsValidateConfirmOpen] = useState(false);
+  const [isRejectConfirmOpen, setIsRejectConfirmOpen] = useState(false);
+  const [pendingActionRequest, setPendingActionRequest] = useState<Request | null>(null);
   const itemsPerPage = 15;
 
   // Filtrage des données
@@ -131,6 +136,42 @@ export default function RequestsManagement() {
   const handleStatusChange = (requestId: number, newStatus: "pending" | "validated" | "rejected") => {
     // En production, vous appelleriez une API ici
     console.log(`Changement de statut pour la demande ${requestId}: ${newStatus}`);
+  };
+
+  const handleValidateClick = (request: Request) => {
+    setPendingActionRequest(request);
+    setIsValidateConfirmOpen(true);
+  };
+
+  const handleRejectClick = (request: Request) => {
+    setPendingActionRequest(request);
+    setIsRejectConfirmOpen(true);
+  };
+
+  const handleConfirmValidate = () => {
+    if (pendingActionRequest) {
+      handleStatusChange(pendingActionRequest.id, "validated");
+      setIsValidateConfirmOpen(false);
+      setPendingActionRequest(null);
+    }
+  };
+
+  const handleConfirmReject = () => {
+    if (pendingActionRequest) {
+      handleStatusChange(pendingActionRequest.id, "rejected");
+      setIsRejectConfirmOpen(false);
+      setPendingActionRequest(null);
+    }
+  };
+
+  const handleCloseValidateConfirm = () => {
+    setIsValidateConfirmOpen(false);
+    setPendingActionRequest(null);
+  };
+
+  const handleCloseRejectConfirm = () => {
+    setIsRejectConfirmOpen(false);
+    setPendingActionRequest(null);
   };
 
   const handleRequestClick = (request: Request) => {
@@ -336,9 +377,12 @@ export default function RequestsManagement() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => handleStatusChange(request.id, "validated")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleValidateClick(request);
+                        }}
                         className="inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 transform hover:scale-105"
-                        title="Marquer comme traité"
+                        title="Marquer comme validé"
                       >
                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -346,9 +390,12 @@ export default function RequestsManagement() {
                         Valider
                       </button>
                       <button
-                        onClick={() => handleStatusChange(request.id, "rejected")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRejectClick(request);
+                        }}
                         className="inline-flex items-center px-3 py-2 border border-red-300 text-xs font-medium rounded-lg text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 transform hover:scale-105"
-                        title="Marquer comme erreur"
+                        title="Marquer comme rejeté"
                       >
                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -419,6 +466,31 @@ export default function RequestsManagement() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         request={selectedRequest}
+        onStatusChange={handleStatusChange}
+      />
+
+      {/* Modal de confirmation pour la validation */}
+      <ValidateConfirm
+        isOpen={isValidateConfirmOpen}
+        onClose={handleCloseValidateConfirm}
+        onConfirm={handleConfirmValidate}
+        requestInfo={pendingActionRequest ? {
+          nom: pendingActionRequest.nom,
+          prenom: pendingActionRequest.prenom,
+          id: pendingActionRequest.id
+        } : null}
+      />
+
+      {/* Modal de confirmation pour le rejet */}
+      <RejectConfirm
+        isOpen={isRejectConfirmOpen}
+        onClose={handleCloseRejectConfirm}
+        onConfirm={handleConfirmReject}
+        requestInfo={pendingActionRequest ? {
+          nom: pendingActionRequest.nom,
+          prenom: pendingActionRequest.prenom,
+          id: pendingActionRequest.id
+        } : null}
       />
     </div>
   );
