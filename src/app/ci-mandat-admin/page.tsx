@@ -34,12 +34,18 @@ export default function AdminLogin() {
         password: credentials.password
       });
 
+      console.log('🔑 Réponse API complète:', response);
+      console.log('🔑 Success:', response.success);
+      console.log('🔑 Data:', response.data);
+
       if (response.success && response.data) {
         // Stocker le token JWT sécurisé
         localStorage.setItem("adminToken", response.data.access_token);
+        console.log('✅ Token stocké, redirection...');
         // Redirection vers le tableau de bord d'administration
         router.push("/ci-mandat-admin/dashboard");
       } else {
+        console.log('❌ Échec de la réponse:', response);
         setError("Email ou mot de passe incorrect");
       }
     } catch (err: unknown) {

@@ -7,6 +7,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService, LoginResponse } from './auth.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -47,11 +48,27 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginDto): Promise<LoginResponse> {
-    console.log('📨 Requête de login reçue:', loginDto);
-    console.log('📧 Email dans DTO:', loginDto.email);
-    console.log('🔐 Mot de passe dans DTO:', loginDto.password ? '***' : 'VIDE');
-    return this.authService.login(loginDto.email, loginDto.password);
+  async login(@Body() body: any): Promise<LoginResponse> {
+    console.log('📨 Corps de la requête brute:', body);
+    console.log('🔍 Type de body:', typeof body);
+    console.log('🔍 Clés de body:', Object.keys(body));
+    
+    // Essayer différents formats de données
+    const email = body.email || body.username || body.Email || body.Username;
+    const password = body.password || body.Password;
+    
+    console.log('📧 Email extrait:', email);
+    console.log('🔐 Mot de passe extrait:', password ? '***' : 'VIDE');
+    console.log('🔍 Type de email:', typeof email);
+    console.log('🔍 Type de password:', typeof password);
+    console.log('🔍 Longueur du password:', password?.length);
+    
+    if (!email || !password) {
+      console.error('❌ Données manquantes dans la requête');
+      throw new UnauthorizedException('Email ou mot de passe incorrect');
+    }
+    
+    return this.authService.login(email, password);
   }
 
   @Post('register')

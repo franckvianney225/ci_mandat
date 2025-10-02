@@ -117,7 +117,19 @@ class ApiClient {
       }
 
       const data = await response.json();
-      return data;
+      
+      // Le backend retourne directement les données, pas une structure ApiResponse
+      // On adapte la réponse pour correspondre à l'interface ApiResponse
+      if (data.success !== undefined) {
+        // Si le backend retourne déjà une structure ApiResponse
+        return data;
+      } else {
+        // Si le backend retourne directement les données
+        return {
+          success: true,
+          data: data
+        };
+      }
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -198,6 +210,8 @@ class ApiClient {
 
   // Auth API
   async login(credentials: { email: string; password: string }): Promise<ApiResponse<{ access_token: string; user: AuthUser }>> {
+    console.log('🔐 Données envoyées au backend:', credentials);
+    console.log('🔐 Corps de la requête:', JSON.stringify(credentials));
     return this.request('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),

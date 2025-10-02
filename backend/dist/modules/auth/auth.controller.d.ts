@@ -1,9 +1,5 @@
 import { AuthService, LoginResponse } from './auth.service';
 import { UserRole } from '../../entities/user.entity';
-declare class LoginDto {
-    email: string;
-    password: string;
-}
 declare class RegisterDto {
     email: string;
     password: string;
@@ -22,7 +18,7 @@ declare class ChangePasswordDto {
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
-    login(loginDto: LoginDto): Promise<LoginResponse>;
+    login(body: any): Promise<LoginResponse>;
     register(registerDto: RegisterDto): Promise<import("../../entities/user.entity").User>;
     getProfile(req: any): any;
     changePassword(req: any, changePasswordDto: ChangePasswordDto): Promise<{
