@@ -3,6 +3,7 @@
 import { Fragment, useState } from "react";
 import ValidateConfirm from "./ValidateConfirm";
 import RejectConfirm from "./RejectConfirm";
+import PDFMandat from "./PDFMandat";
 
 interface Request {
   id: number;
@@ -58,6 +59,48 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
 
   const handleCloseRejectConfirm = () => {
     setIsRejectConfirmOpen(false);
+  };
+
+  const handlePrintPDF = () => {
+    // Créer une nouvelle fenêtre pour l'impression
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    // Générer le contenu HTML du PDF
+    const pdfContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Mandat - ${request.prenom} ${request.nom}</title>
+          <meta charset="UTF-8">
+          <style>
+            @media print {
+              body { margin: 0; }
+              @page { margin: 1cm; }
+            }
+            * { box-sizing: border-box; }
+          </style>
+        </head>
+        <body>
+          ${document.getElementById('pdf-mandat-content')?.outerHTML || ''}
+        </body>
+      </html>
+    `;
+
+    // Écrire le contenu dans la nouvelle fenêtre
+    printWindow.document.write(pdfContent);
+    printWindow.document.close();
+
+    // Attendre que le contenu soit chargé puis imprimer
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+
+      // Fermer la fenêtre après l'impression (optionnel)
+      printWindow.onafterprint = () => {
+        printWindow.close();
+      };
+    };
   };
 
   const getStatusClasses = (status: string) => {
@@ -236,7 +279,15 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
             <div className="mt-8 pt-6 border-t border-gray-200">
               <div className="flex justify-between items-center">
                 <div className="flex gap-3">
-
+                  <button
+                    onClick={handlePrintPDF}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    Imprimer PDF
+                  </button>
                 </div>
                 
                 <div className="flex gap-3">
