@@ -10,22 +10,51 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole, UserStatus } from '../../entities/user.entity';
 
+import { IsEmail, IsNotEmpty, IsString, IsEnum, IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class PersonalDataDto {
+  @IsNotEmpty()
+  @IsString()
+  firstName: string;
+
+  @IsNotEmpty()
+  @IsString()
+  lastName: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  department?: string;
+}
+
 class CreateUserDto {
+  @IsEmail()
+  @IsNotEmpty()
   email: string;
+
+  @IsNotEmpty()
+  @IsString()
   password: string;
+
+  @IsEnum(UserRole)
+  @IsNotEmpty()
   role: UserRole;
-  personalData: {
-    firstName: string;
-    lastName: string;
-    phone?: string;
-    department?: string;
-  };
+
+  @ValidateNested()
+  @Type(() => PersonalDataDto)
+  personalData: PersonalDataDto;
 }
 
 class UpdateUserDto {
@@ -74,6 +103,7 @@ export class UsersController {
   }
 
   @Post()
+  @UsePipes(new ValidationPipe({ transform: true }))
   async create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }

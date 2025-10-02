@@ -1,15 +1,16 @@
 import { UsersService } from './users.service';
 import { UserRole, UserStatus } from '../../entities/user.entity';
+declare class PersonalDataDto {
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    department?: string;
+}
 declare class CreateUserDto {
     email: string;
     password: string;
     role: UserRole;
-    personalData: {
-        firstName: string;
-        lastName: string;
-        phone?: string;
-        department?: string;
-    };
+    personalData: PersonalDataDto;
 }
 declare class UpdateUserDto {
     email?: string;
