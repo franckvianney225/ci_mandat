@@ -59,49 +59,13 @@ export default function EditUserModal({ user, onClose, onSubmit }: EditUserModal
 
       {/* Modal */}
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full border border-gray-200">
+        <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900">Modifier l&apos;utilisateur</h3>
           </div>
           
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-              <input
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] text-gray-900 bg-white"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Rôle</label>
-              <select
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'super_admin' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] text-gray-900 bg-white"
-              >
-                <option value="admin">Administrateur</option>
-                <option value="super_admin">Super Admin</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Statut</label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' | 'suspended' | 'pending_verification' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] text-gray-900 bg-white"
-              >
-                <option value="active">Actif</option>
-                <option value="inactive">Inactif</option>
-                <option value="suspended">Suspendu</option>
-                <option value="pending_verification">En attente</option>
-              </select>
-            </div>
-            
+            {/* Nom et Prénom sur la même ligne */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Prénom</label>
@@ -109,8 +73,8 @@ export default function EditUserModal({ user, onClose, onSubmit }: EditUserModal
                   type="text"
                   required
                   value={formData.personalData.firstName}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
+                  onChange={(e) => setFormData({
+                    ...formData,
                     personalData: { ...formData.personalData, firstName: e.target.value }
                   })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] text-gray-900 bg-white"
@@ -123,39 +87,68 @@ export default function EditUserModal({ user, onClose, onSubmit }: EditUserModal
                   type="text"
                   required
                   value={formData.personalData.lastName}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    personalData: { ...formData.personalData, lastName: e.target.value }
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    personalData: { ...formData.personalData, lastName: e.target.value.toUpperCase() }
                   })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] text-gray-900 bg-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] text-gray-900 bg-white uppercase"
                 />
               </div>
             </div>
             
+            {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
               <input
-                type="tel"
-                value={formData.personalData.phone}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  personalData: { ...formData.personalData, phone: e.target.value }
-                })}
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] text-gray-900 bg-white"
               />
             </div>
             
+            {/* Téléphone et Rôle sur la même ligne */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Téléphone</label>
+                <input
+                  type="tel"
+                  value={formData.personalData.phone}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    personalData: { ...formData.personalData, phone: e.target.value }
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] text-gray-900 bg-white"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Rôle</label>
+                <select
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value as 'admin' | 'super_admin' })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] text-gray-900 bg-white appearance-none"
+                >
+                  <option value="admin">Administrateur</option>
+                  <option value="super_admin">Super Admin</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Statut */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Département</label>
-              <input
-                type="text"
-                value={formData.personalData.department}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  personalData: { ...formData.personalData, department: e.target.value }
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] text-gray-900 bg-white"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-2">Statut</label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' | 'suspended' | 'pending_verification' })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] text-gray-900 bg-white appearance-none"
+              >
+                <option value="active">Actif</option>
+                <option value="inactive">Inactif</option>
+                <option value="suspended">Suspendu</option>
+                <option value="pending_verification">En attente de vérification</option>
+              </select>
             </div>
             
             <div className="flex justify-end space-x-3 pt-4">
