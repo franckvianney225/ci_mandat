@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
-import Statistics from "@/components/admin/Statistics";
-import RecentRequests from "@/components/admin/RecentRequests";
+import Dashboard from "@/components/admin/Dashboard";
 import RequestsManagement from "@/components/admin/RequestsManagement";
 import UsersManagement from "@/components/admin/UsersManagement";
 
@@ -32,12 +31,7 @@ export default function AdminDashboard() {
   const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
-        return (
-          <div className="space-y-6">
-            <Statistics />
-            <RecentRequests />
-          </div>
-        );
+        return <Dashboard />;
       case "requests":
         return <RequestsManagement />;
       case "users":
@@ -50,12 +44,7 @@ export default function AdminDashboard() {
           </div>
         );
       default:
-        return (
-          <div className="space-y-6">
-            <Statistics />
-            <RecentRequests />
-          </div>
-        );
+        return <Dashboard />;
     }
   };
 

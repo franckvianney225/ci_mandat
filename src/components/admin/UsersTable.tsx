@@ -148,8 +148,8 @@ export default function UsersTable({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                      user.role === 'super_admin' 
-                        ? 'bg-purple-100 text-purple-800 border border-purple-200' 
+                      user.role === 'super_admin'
+                        ? 'bg-purple-100 text-purple-800 border border-purple-200'
                         : 'bg-blue-100 text-blue-800 border border-blue-200'
                     }`}>
                       {getRoleText(user.role)}
