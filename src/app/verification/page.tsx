@@ -7,8 +7,15 @@ interface VerificationResult {
   isValid: boolean;
   mandate?: {
     referenceNumber: string;
-    clientName: string;
-    clientEmail: string;
+    formData?: {
+      nom?: string;
+      prenom?: string;
+      fonction?: string;
+      email?: string;
+      telephone?: string;
+      circonscription?: string;
+      [key: string]: unknown;
+    };
     createdAt: string;
     status: string;
   };
@@ -103,15 +110,37 @@ export default function VerificationPage() {
                 <span className="font-medium text-gray-900">{result.mandate.referenceNumber}</span>
               </div>
               
-              <div className="flex justify-between">
-                <span className="text-gray-600">Client:</span>
-                <span className="font-medium text-gray-900">{result.mandate.clientName}</span>
-              </div>
-              
-              <div className="flex justify-between">
-                <span className="text-gray-600">Email:</span>
-                <span className="font-medium text-gray-900">{result.mandate.clientEmail}</span>
-              </div>
+              {result.mandate.formData && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Nom:</span>
+                    <span className="font-medium text-gray-900">
+                      {result.mandate.formData.nom || 'Non spécifié'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Prénom:</span>
+                    <span className="font-medium text-gray-900">
+                      {result.mandate.formData.prenom || 'Non spécifié'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Circonscription:</span>
+                    <span className="font-medium text-gray-900">
+                      {result.mandate.formData.circonscription || 'Non spécifiée'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Fonction:</span>
+                    <span className="font-medium text-gray-900">
+                      {result.mandate.formData.fonction || 'Non spécifiée'}
+                    </span>
+                  </div>
+                </>
+              )}
               
               <div className="flex justify-between">
                 <span className="text-gray-600">Date de création:</span>
@@ -123,11 +152,14 @@ export default function VerificationPage() {
               <div className="flex justify-between">
                 <span className="text-gray-600">Statut:</span>
                 <span className={`font-medium ${
-                  result.mandate.status === 'APPROVED' ? 'text-green-600' : 
-                  result.mandate.status === 'PENDING' ? 'text-yellow-600' : 'text-red-600'
+                  result.mandate.status === 'super_admin_approved' ? 'text-green-600' :
+                  result.mandate.status === 'admin_approved' ? 'text-green-600' :
+                  result.mandate.status === 'pending_validation' ? 'text-yellow-600' : 'text-red-600'
                 }`}>
-                  {result.mandate.status === 'APPROVED' ? 'Approuvé' : 
-                   result.mandate.status === 'PENDING' ? 'En attente' : 'Rejeté'}
+                  {result.mandate.status === 'super_admin_approved' ? 'Validé définitivement' :
+                   result.mandate.status === 'admin_approved' ? 'Validé par admin' :
+                   result.mandate.status === 'pending_validation' ? 'En attente' :
+                   result.mandate.status === 'rejected' ? 'Rejeté' : result.mandate.status}
                 </span>
               </div>
             </div>

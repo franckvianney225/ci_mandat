@@ -117,9 +117,14 @@ export class SecurityService {
         };
       }
 
-      // Vérifier si le mandat est approuvé (admin ou super admin)
-      const isApproved = mandate.status === 'admin_approved' || mandate.status === 'super_admin_approved';
-      if (!isApproved) {
+      // Vérifier si le mandat est approuvé (admin ou super admin) et non rejeté
+      const isApproved =
+        mandate.status === 'admin_approved' ||
+        mandate.status === 'super_admin_approved';
+      
+      const isRejected = mandate.status === 'rejected';
+      
+      if (isRejected || !isApproved) {
         return {
           isValid: false,
           message: 'Mandat non approuvé'
