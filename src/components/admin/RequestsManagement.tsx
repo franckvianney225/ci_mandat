@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import ClientDetailsModal from "./ClientDetailsModal";
 import ValidateConfirm from "./ValidateConfirm";
 import RejectConfirm from "./RejectConfirm";
+import CreateRequestModal from "./CreateRequestModal";
 import { apiClient } from "@/lib/api";
 
 interface User {
@@ -75,6 +76,7 @@ export default function RequestsManagement({ currentUser }: RequestsManagementPr
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isValidateConfirmOpen, setIsValidateConfirmOpen] = useState(false);
   const [isRejectConfirmOpen, setIsRejectConfirmOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [pendingActionRequest, setPendingActionRequest] = useState<Request | null>(null);
   const itemsPerPage = 15;
 
@@ -401,10 +403,7 @@ export default function RequestsManagement({ currentUser }: RequestsManagementPr
         {/* Bouton Nouvelle demande - visible uniquement pour super_admin */}
         {currentUser?.role === "super_admin" && (
           <button
-            onClick={() => {
-              // TODO: Implémenter la logique pour créer une nouvelle demande
-              console.log("Créer une nouvelle demande");
-            }}
+            onClick={() => setIsCreateModalOpen(true)}
             className="inline-flex items-center px-4 py-3 border border-transparent text-sm font-semibold rounded-lg text-white bg-[#FF8200] hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF8200] transition-all duration-200 transform hover:scale-105 shadow-md"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -639,6 +638,37 @@ export default function RequestsManagement({ currentUser }: RequestsManagementPr
           prenom: pendingActionRequest.prenom,
           id: pendingActionRequest.id
         } : null}
+      />
+
+      {/* Modal de création de demande */}
+      <CreateRequestModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => {
+          // Recharger les données après création réussie
+          const loadMandates = async () => {
+            try {
+              const response = await apiClient.getMandates();
+              if (response.success && response.data) {
+                const mandates = response.data.data.map((mandate: MandateData) => ({
+                  id: mandate.id,
+                  nom: mandate.formData.nom,
+                  prenom: mandate.formData.prenom,
+                  email: mandate.formData.email,
+                  telephone: mandate.formData.telephone,
+                  circonscription: mandate.formData.circonscription,
+                  status: mapBackendStatusToFrontend(mandate.status) as "pending" | "validated" | "rejected",
+                  createdAt: mandate.createdAt,
+                  referenceNumber: mandate.referenceNumber
+                }));
+                setAllRequests(mandates);
+              }
+            } catch (err) {
+              console.error("Erreur lors du rechargement des mandats:", err);
+            }
+          };
+          loadMandates();
+        }}
       />
     </div>
   );
