@@ -139,6 +139,28 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
         </ul>
       </nav>
 
+      {/* Informations utilisateur connecté */}
+      {!isLoading && currentUser && (
+        <div className="p-4 border-t border-gray-100 bg-white/60 backdrop-blur-sm">
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-[#FF8200] to-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                {currentUser.personalData?.firstName?.charAt(0) || currentUser.email.charAt(0).toUpperCase()}
+              </div>
+            </div>
+            <div className="text-sm font-semibold text-gray-800 truncate">
+              {currentUser.personalData?.firstName && currentUser.personalData?.lastName
+                ? `${currentUser.personalData.firstName} ${currentUser.personalData.lastName}`
+                : currentUser.email
+              }
+            </div>
+            <div className="text-xs text-gray-500 font-medium capitalize">
+              {currentUser.role === "super_admin" ? "Super Administrateur" : "Administrateur"}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Déconnexion améliorée */}
       <div className="p-4 border-t border-gray-100 bg-white/50">
         <button
