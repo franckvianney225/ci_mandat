@@ -77,6 +77,14 @@ export default function Dashboard({ onSectionChange }: DashboardProps) {
     }
   };
 
+  const handleCardClick = (status: string) => {
+    if (onSectionChange) {
+      onSectionChange('requests');
+    } else {
+      router.push(`/ci-mandat-admin?tab=requests&status=${status}`);
+    }
+  };
+
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -89,13 +97,16 @@ export default function Dashboard({ onSectionChange }: DashboardProps) {
         
         if (statsResponse.success && statsResponse.data) {
           const statsData = statsResponse.data;
+          // Calculer le total des demandes validées (admin_approved + super_admin_approved)
+          const totalValidated = statsData.adminApproved + statsData.superAdminApproved;
+          
           setStats({
             totalRequests: statsData.total,
-            validatedRequests: statsData.superAdminApproved,
+            validatedRequests: totalValidated,
             pendingRequests: statsData.pending,
             rejectedRequests: statsData.rejected,
-            totalUsers: 0, // TODO: Récupérer depuis l'API users
-            activeUsers: 0  // TODO: Récupérer depuis l'API users
+            totalUsers: 0,
+            activeUsers: 0
           });
         }
 
@@ -189,9 +200,12 @@ export default function Dashboard({ onSectionChange }: DashboardProps) {
   return (
     <div className="space-y-6">
       {/* Statistiques principales */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {/* Total des demandes */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+        <div
+          className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200 cursor-pointer"
+          onClick={() => handleCardClick('all')}
+        >
           <div className="flex items-center">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,9 +218,28 @@ export default function Dashboard({ onSectionChange }: DashboardProps) {
             </div>
           </div>
         </div>
-
+   {/* En attente */}
+   <div
+     className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200 cursor-pointer"
+     onClick={() => handleCardClick('pending')}
+   >
+     <div className="flex items-center">
+       <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-sm">
+         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+         </svg>
+       </div>
+       <div className="ml-4">
+         <p className="text-sm font-medium text-gray-600">En attente</p>
+         <p className="text-2xl font-bold text-gray-900">{stats.pendingRequests}</p>
+       </div>
+     </div>
+   </div>
         {/* Demandes validées */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+        <div
+          className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200 cursor-pointer"
+          onClick={() => handleCardClick('validated')}
+        >
           <div className="flex items-center">
             <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-sm">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,23 +253,13 @@ export default function Dashboard({ onSectionChange }: DashboardProps) {
           </div>
         </div>
 
-        {/* En attente */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-sm">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">En attente</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.pendingRequests}</p>
-            </div>
-          </div>
-        </div>
+     
 
         {/* Demandes rejetées */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+        <div
+          className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200 cursor-pointer"
+          onClick={() => handleCardClick('rejected')}
+        >
           <div className="flex items-center">
             <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-sm">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,35 +273,6 @@ export default function Dashboard({ onSectionChange }: DashboardProps) {
           </div>
         </div>
 
-        {/* Total utilisateurs */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total utilisateurs</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Utilisateurs actifs */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Utilisateurs actifs</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.activeUsers}</p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Demandes récentes */}

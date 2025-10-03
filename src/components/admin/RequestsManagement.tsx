@@ -64,6 +64,33 @@ export default function RequestsManagement() {
   const [pendingActionRequest, setPendingActionRequest] = useState<Request | null>(null);
   const itemsPerPage = 15;
 
+  // Lire le paramètre status de l'URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const statusParam = urlParams.get('status');
+    
+    if (statusParam) {
+      // Mapper les paramètres URL vers les filtres internes
+      const statusMapping: Record<string, string> = {
+        'all': 'all',
+        'pending': 'pending_validation',
+        'validated': 'validated',
+        'rejected': 'rejected'
+      };
+      
+      if (statusMapping[statusParam]) {
+        setStatusFilter(statusMapping[statusParam]);
+        
+        // Définir le viewMode en fonction du statut
+        if (statusParam === 'pending' || statusParam === 'rejected' || statusParam === 'all') {
+          setViewMode('new');
+        } else if (statusParam === 'validated') {
+          setViewMode('validated');
+        }
+      }
+    }
+  }, []);
+
   // Charger les mandats depuis l'API
   useEffect(() => {
     const loadMandates = async () => {
@@ -108,15 +135,22 @@ export default function RequestsManagement() {
         request.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
         request.email.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesStatus = statusFilter === "all" || request.status === statusFilter;
       const matchesDepartment = departmentFilter === "all" || request.circonscription === departmentFilter;
       
-      // Filtre par mode de vue (toggle)
-      const matchesViewMode = viewMode === "new"
-        ? request.status === "pending"
-        : request.status === "validated";
+      // Logique de filtrage combinée : priorité au statusFilter s'il est défini
+      let matchesStatusAndViewMode = true;
+      
+      if (statusFilter !== "all") {
+        // Si un filtre de statut spécifique est défini (via URL ou sélecteur), l'utiliser
+        matchesStatusAndViewMode = request.status === statusFilter;
+      } else {
+        // Sinon, utiliser le viewMode par défaut
+        matchesStatusAndViewMode = viewMode === "new"
+          ? request.status === "pending"
+          : request.status === "validated";
+      }
 
-      return matchesSearch && matchesStatus && matchesDepartment && matchesViewMode;
+      return matchesSearch && matchesStatusAndViewMode && matchesDepartment;
     });
   }, [searchTerm, statusFilter, departmentFilter, viewMode, allRequests]);
 
