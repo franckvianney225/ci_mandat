@@ -16,6 +16,85 @@ interface MandateData {
   createdAt: string;
 }
 
+// Fonctions de sécurité et de validation
+const SecurityUtils = {
+  /**
+   * Valide et nettoie les données du mandat
+   */
+  validateMandateData(mandate: MandateData): MandateData {
+    if (!mandate || typeof mandate !== 'object') {
+      throw new Error('Données du mandat invalides');
+    }
+
+    const requiredFields = ['id', 'nom', 'prenom', 'email', 'telephone', 'circonscription', 'referenceNumber'];
+    for (const field of requiredFields) {
+      if (!mandate[field as keyof MandateData]) {
+        throw new Error(`Champ obligatoire manquant: ${field}`);
+      }
+    }
+
+    return {
+      ...mandate,
+      nom: this.sanitizeText(mandate.nom),
+      prenom: this.sanitizeText(mandate.prenom),
+      email: this.sanitizeText(mandate.email),
+      telephone: this.sanitizeText(mandate.telephone),
+      circonscription: this.sanitizeText(mandate.circonscription),
+      referenceNumber: this.validateReferenceNumber(mandate.referenceNumber)
+    };
+  },
+
+  /**
+   * Nettoie le texte pour éviter l'injection XSS et autres attaques
+   */
+  sanitizeText(text: string): string {
+    if (typeof text !== 'string') {
+      return '';
+    }
+
+    return text
+      .trim()
+      .replace(/[<>]/g, '') // Supprime les caractères < et >
+      .replace(/javascript:/gi, '') // Supprime les références javascript:
+      .replace(/on\w+=/gi, '') // Supprime les event handlers
+      .substring(0, 100); // Limite la longueur
+  },
+
+  /**
+   * Valide le format du numéro de référence
+   */
+  validateReferenceNumber(referenceNumber: string): string {
+    if (typeof referenceNumber !== 'string') {
+      throw new Error('Numéro de référence invalide');
+    }
+
+    // Format attendu: MND-XXXXXXXX-XXXX (MND-8 caractères-4 caractères alphanumériques)
+    const refPattern = /^MND-[A-Z0-9]{8}-[A-Z0-9]{4}$/;
+    if (!refPattern.test(referenceNumber)) {
+      throw new Error('Format du numéro de référence invalide');
+    }
+
+    return referenceNumber;
+  },
+
+  /**
+   * Encode un paramètre URL de manière sécurisée
+   */
+  encodeURIComponentSafe(value: string): string {
+    return encodeURIComponent(value)
+      .replace(/'/g, '%27') // Encode les apostrophes
+      .replace(/"/g, '%22'); // Encode les guillemets
+  },
+
+  /**
+   * Génère un nom de fichier sécurisé
+   */
+  generateSecureFileName(referenceNumber: string): string {
+    const sanitized = referenceNumber.replace(/[^a-zA-Z0-9-_]/g, '_');
+    return `mandat_${sanitized}.pdf`;
+  }
+};
+
 interface PDFMandatGeneratorProps {
   mandate: MandateData;
   onClose: () => void;
@@ -26,30 +105,48 @@ const PDFMandatGenerator = forwardRef(({
   onClose
 }: PDFMandatGeneratorProps, ref) => {
   const generatePDF = async () => {
+    // Étape 1 : Validation et sécurisation des données
+    let secureMandate: MandateData;
+    try {
+      secureMandate = SecurityUtils.validateMandateData(mandate);
+    } catch (error) {
+      console.error('Erreur de validation des données:', error);
+      throw new Error('Données du mandat invalides ou manquantes');
+    }
+
     const doc = new jsPDF('portrait', 'mm', 'a4');
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Générer le QR code
+    // Générer le QR code de manière sécurisée
     const generateQRCode = async (): Promise<string> => {
       try {
-        // Générer l'URL de vérification similaire au backend
+        // Générer l'URL de vérification de manière sécurisée
         const baseUrl = window.location.origin;
-        const verificationUrl = `${baseUrl}/verification?ref=${mandate.referenceNumber}`;
-        
+        const encodedRef = SecurityUtils.encodeURIComponentSafe(secureMandate.referenceNumber);
+        const verificationUrl = `${baseUrl}/verification?ref=${encodedRef}`;
+
+        // Validation supplémentaire de l'URL générée
+        try {
+          new URL(verificationUrl);
+        } catch {
+          throw new Error('URL de vérification invalide générée');
+        }
+
         const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
           width: 150,
           margin: 1,
           color: {
             dark: '#FF8200', // Orange CI-Mandat
             light: '#FFFFFF'
-          }
+          },
+          errorCorrectionLevel: 'M' // Niveau de correction d'erreur moyen pour plus de sécurité
         });
-        
+
         return qrCodeDataUrl;
       } catch (error) {
         console.error('Erreur lors de la génération du QR code:', error);
-        return '';
+        throw error; // Remonter l'erreur plutôt que de retourner une chaîne vide
       }
     };
 
@@ -161,9 +258,9 @@ const PDFMandatGenerator = forwardRef(({
     // Paragraphe 6
     doc.text('de la circonscription électorale d\'', leftMargin, yPos);
     doc.setFont('helvetica', 'bold');
-    doc.text(mandate.circonscription, leftMargin + doc.getTextWidth('de la circonscription électorale d\''), yPos);
+    doc.text(secureMandate.circonscription, leftMargin + doc.getTextWidth('de la circonscription électorale d\''), yPos);
     doc.setFont('helvetica', 'normal');
-    doc.text('.', leftMargin + doc.getTextWidth('de la circonscription électorale d\'' + mandate.circonscription), yPos);
+    doc.text('.', leftMargin + doc.getTextWidth('de la circonscription électorale d\'' + secureMandate.circonscription), yPos);
     yPos += lineHeight * 2;
 
     // Paragraphe 7
@@ -171,9 +268,9 @@ const PDFMandatGenerator = forwardRef(({
     yPos += lineHeight;
     doc.text('les intérêts du Candidat ', leftMargin, yPos);
     doc.setFont('helvetica', 'bold');
-    doc.text(`${mandate.prenom} ${mandate.nom}`, leftMargin + doc.getTextWidth('les intérêts du Candidat '), yPos);
+    doc.text(`${secureMandate.prenom} ${secureMandate.nom}`, leftMargin + doc.getTextWidth('les intérêts du Candidat '), yPos);
     doc.setFont('helvetica', 'normal');
-    doc.text(' et en valoir ce que de droit.', leftMargin + doc.getTextWidth('les intérêts du Candidat ' + mandate.prenom + ' ' + mandate.nom), yPos);
+    doc.text(' et en valoir ce que de droit.', leftMargin + doc.getTextWidth('les intérêts du Candidat ' + secureMandate.prenom + ' ' + secureMandate.nom), yPos);
     
     yPos += lineHeight * 3;
 
@@ -192,7 +289,7 @@ const PDFMandatGenerator = forwardRef(({
     doc.text('Le Candidat', signatureX, yPos - 20, { align: 'center' });
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
-    doc.text(`Dr ${mandate.prenom} ${mandate.nom}`, signatureX, yPos, { align: 'center' });
+    doc.text(`Dr ${secureMandate.prenom} ${secureMandate.nom}`, signatureX, yPos, { align: 'center' });
     
     // Ajouter le QR code en bas à droite
     if (qrCodeDataUrl) {
@@ -215,10 +312,10 @@ const PDFMandatGenerator = forwardRef(({
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text(`Référence: ${mandate.referenceNumber}`, 20, pageHeight - 10);
-    
-    // Sauvegarder le PDF
-    const fileName = `mandat_${mandate.referenceNumber}.pdf`;
+    doc.text(`Référence: ${secureMandate.referenceNumber}`, 20, pageHeight - 10);
+
+    // Sauvegarder le PDF avec un nom de fichier sécurisé
+    const fileName = SecurityUtils.generateSecureFileName(secureMandate.referenceNumber);
     doc.save(fileName);
     onClose();
   };
@@ -230,10 +327,17 @@ const PDFMandatGenerator = forwardRef(({
         await generatePDF();
       } catch (error) {
         console.error('Erreur génération PDF:', error);
+        // Afficher un message d'erreur à l'utilisateur si possible
+        if (error instanceof Error) {
+          // Ici on pourrait ajouter une notification ou un toast d'erreur
+          alert(`Erreur lors de la génération du PDF: ${error.message}`);
+        } else {
+          alert('Erreur lors de la génération du PDF');
+        }
         onClose();
       }
     };
-    
+
     generatePDFAsync();
   }, []);
 

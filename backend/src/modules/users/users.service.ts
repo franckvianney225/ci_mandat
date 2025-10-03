@@ -221,6 +221,16 @@ export class UsersService {
   async resetPassword(id: string, newPassword: string): Promise<void> {
     const user = await this.findOne(id);
     
+    // Vérifier que le mot de passe n'est pas vide
+    if (!newPassword || newPassword.trim().length === 0) {
+      throw new BadRequestException('Le mot de passe ne peut pas être vide');
+    }
+    
+    // Vérifier la longueur minimale
+    if (newPassword.length < 6) {
+      throw new BadRequestException('Le mot de passe doit contenir au moins 6 caractères');
+    }
+    
     const saltRounds = 12;
     user.passwordHash = await bcrypt.hash(newPassword, saltRounds);
     

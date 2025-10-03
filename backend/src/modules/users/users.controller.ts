@@ -18,7 +18,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole, UserStatus } from '../../entities/user.entity';
 
-import { IsEmail, IsNotEmpty, IsString, IsEnum, IsOptional, ValidateNested } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, IsEnum, IsOptional, ValidateNested, MinLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class PersonalDataDto {
@@ -85,6 +85,9 @@ class UserFiltersDto {
 }
 
 class ResetPasswordDto {
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(6, { message: 'Le mot de passe doit contenir au moins 6 caractères' })
   newPassword: string;
 }
 
@@ -139,6 +142,7 @@ export class UsersController {
 
   @Post(':id/reset-password')
   @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ transform: true }))
   async resetPassword(
     @Param('id') id: string,
     @Body() resetPasswordDto: ResetPasswordDto,

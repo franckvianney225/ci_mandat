@@ -91,6 +91,12 @@ class UserFiltersDto {
 }
 class ResetPasswordDto {
 }
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(6, { message: 'Le mot de passe doit contenir au moins 6 caractères' }),
+    __metadata("design:type", String)
+], ResetPasswordDto.prototype, "newPassword", void 0);
 let UsersController = class UsersController {
     constructor(usersService) {
         this.usersService = usersService;
@@ -187,6 +193,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)(':id/reset-password'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true })),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),

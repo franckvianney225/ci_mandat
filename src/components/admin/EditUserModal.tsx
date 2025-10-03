@@ -32,9 +32,10 @@ interface EditUserModalProps {
       department?: string;
     };
   }) => void;
+  onPasswordChange?: (userId: string, newPassword: string) => void;
 }
 
-export default function EditUserModal({ user, onClose, onSubmit }: EditUserModalProps) {
+export default function EditUserModal({ user, onClose, onSubmit, onPasswordChange }: EditUserModalProps) {
   const [formData, setFormData] = useState({
     email: user.email,
     role: user.role,
@@ -46,10 +47,29 @@ export default function EditUserModal({ user, onClose, onSubmit }: EditUserModal
       department: user.personalData.department || ''
     }
   });
+  
+  const [passwordData, setPasswordData] = useState({
+    newPassword: '',
+    confirmPassword: ''
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
+    
+    // Si un nouveau mot de passe est fourni et confirmé, appeler onPasswordChange
+    if (passwordData.newPassword && passwordData.newPassword.trim() !== '' && passwordData.newPassword === passwordData.confirmPassword) {
+      if (onPasswordChange) {
+        onPasswordChange(user.id, passwordData.newPassword);
+      }
+    }
+  };
+
+  const handlePasswordChange = (field: 'newPassword' | 'confirmPassword', value: string) => {
+    setPasswordData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   return (
@@ -149,6 +169,37 @@ export default function EditUserModal({ user, onClose, onSubmit }: EditUserModal
                 <option value="suspended">Suspendu</option>
                 <option value="pending_verification">En attente de vérification</option>
               </select>
+            </div>
+            
+            {/* Section de modification du mot de passe */}
+            <div className="pt-6 border-t border-gray-200">
+              <h4 className="text-md font-semibold text-gray-900 mb-4">Modifier le mot de passe</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nouveau mot de passe</label>
+                  <input
+                    type="password"
+                    value={passwordData.newPassword}
+                    onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
+                    placeholder="Laisser vide pour ne pas modifier"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] text-gray-900 bg-white"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirmer le mot de passe</label>
+                  <input
+                    type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+                    placeholder="Confirmer le nouveau mot de passe"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] text-gray-900 bg-white"
+                  />
+                </div>
+              </div>
+              {passwordData.newPassword && passwordData.newPassword !== passwordData.confirmPassword && (
+                <p className="text-red-600 text-sm mt-2">Les mots de passe ne correspondent pas</p>
+              )}
             </div>
             
             <div className="flex justify-end space-x-3 pt-4">

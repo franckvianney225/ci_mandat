@@ -213,6 +213,13 @@ class ApiClient {
     });
   }
 
+  async resetUserPassword(userId: string, newPassword: string): Promise<ApiResponse> {
+    return this.request(`/users/${userId}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify({ newPassword }),
+    });
+  }
+
   // Auth API
   async login(credentials: { email: string; password: string }): Promise<ApiResponse<{ access_token: string; user: AuthUser }>> {
     console.log('🔐 Données envoyées au backend:', credentials);
@@ -396,19 +403,23 @@ class ApiClient {
 
   async generateMandatePDF(mandateId: string): Promise<Blob> {
     const token = this.getToken();
-    
+
     const response = await fetch(`${API_BASE_URL}/mandates/${mandateId}/pdf`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
       },
     });
-    
+
     if (!response.ok) {
       throw new ApiError(response.status, `HTTP error! status: ${response.status}`);
     }
-    
+
     return await response.blob();
+  }
+
+  async getMandateVerificationUrl(referenceNumber: string): Promise<ApiResponse<{ verificationUrl: string }>> {
+    return this.request(`/mandates/verification-url/${referenceNumber}`);
   }
 }
 

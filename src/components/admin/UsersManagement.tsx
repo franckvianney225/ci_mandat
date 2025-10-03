@@ -34,6 +34,7 @@ export default function UsersManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [error, setError] = useState<string | null>(null);
 
   const itemsPerPage = 10;
 
@@ -119,6 +120,26 @@ export default function UsersManagement() {
     }
   };
 
+  const handlePasswordChange = async (userId: string, newPassword: string) => {
+    try {
+      setError(null);
+      const response = await apiClient.resetUserPassword(userId, newPassword);
+
+      if (response.success) {
+        console.log('Mot de passe modifié avec succès');
+        // Optionnel: afficher un message de succès
+      } else {
+        const errorMessage = response.error || "Erreur lors de la modification du mot de passe";
+        setError(errorMessage);
+        console.error("Erreur lors de la modification du mot de passe:", response.error);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erreur lors de la modification du mot de passe";
+      setError(errorMessage);
+      console.error("Erreur lors de la modification du mot de passe:", error);
+    }
+  };
+
   const handleDeleteUser = async (userId: string) => {
     if (confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) {
       try {
@@ -137,6 +158,18 @@ export default function UsersManagement() {
 
   return (
     <div className="space-y-6">
+      {/* Affichage des erreurs */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        </div>
+      )}
+
       {/* Barre de recherche et filtres */}
       <UsersFilters
         searchTerm={searchTerm}
@@ -199,6 +232,7 @@ export default function UsersManagement() {
               department?: string;
             };
           }) => handleUpdateUser(selectedUser.id, userData)}
+          onPasswordChange={handlePasswordChange}
         />
       )}
     </div>

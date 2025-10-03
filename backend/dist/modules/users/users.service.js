@@ -157,6 +157,12 @@ let UsersService = class UsersService {
     }
     async resetPassword(id, newPassword) {
         const user = await this.findOne(id);
+        if (!newPassword || newPassword.trim().length === 0) {
+            throw new common_1.BadRequestException('Le mot de passe ne peut pas être vide');
+        }
+        if (newPassword.length < 6) {
+            throw new common_1.BadRequestException('Le mot de passe doit contenir au moins 6 caractères');
+        }
         const saltRounds = 12;
         user.passwordHash = await bcrypt.hash(newPassword, saltRounds);
         await this.usersRepository.save(user);
