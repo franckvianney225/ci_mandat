@@ -396,17 +396,6 @@ CI-Mandat - Système de gestion des mandats
       <div class="info-item">
         <span class="info-label">Date de validation:</span> ${approvalDate}
       </div>
-      
-      <p style="margin-top: 20px;">
-        <strong>Prochaines étapes:</strong><br>
-        Votre mandat est maintenant actif. Vous pouvez le télécharger depuis votre espace personnel ou contacter notre service pour toute information complémentaire.
-      </p>
-      
-      <p style="text-align: center; margin-top: 30px;">
-        <a href="http://localhost:3000" class="button">
-          Accéder à votre espace
-        </a>
-      </p>
     </div>
     
     <div class="footer">
@@ -435,9 +424,6 @@ DÉTAILS DU MANDAT VALIDÉ:
 - Fonction: ${formData.fonction || 'Non spécifiée'}
 - Circonscription: ${formData.circonscription || 'Non spécifiée'}
 - Date de validation: ${approvalDate}
-
-Prochaines étapes:
-Votre mandat est maintenant actif. Vous pouvez le télécharger depuis votre espace personnel ou contacter notre service pour toute information complémentaire.
 
 Ceci est une notification automatique de validation de mandat.
 Merci de ne pas répondre à cet email.
