@@ -193,7 +193,12 @@ export class MandatesService {
     mandate.adminApprovedAt = new Date();
     mandate.adminApproverId = adminId;
 
-    return await this.mandatesRepository.save(mandate);
+    const savedMandate = await this.mandatesRepository.save(mandate);
+    
+    // Envoyer l'email de validation intermédiaire au demandeur
+    await this.sendMandateApprovedEmail(savedMandate);
+    
+    return savedMandate;
   }
 
   async validateBySuperAdmin(id: string, superAdminId: string): Promise<Mandate> {

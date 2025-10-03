@@ -143,7 +143,9 @@ let MandatesService = MandatesService_1 = class MandatesService {
         mandate.status = mandate_entity_1.MandateStatus.ADMIN_APPROVED;
         mandate.adminApprovedAt = new Date();
         mandate.adminApproverId = adminId;
-        return await this.mandatesRepository.save(mandate);
+        const savedMandate = await this.mandatesRepository.save(mandate);
+        await this.sendMandateApprovedEmail(savedMandate);
+        return savedMandate;
     }
     async validateBySuperAdmin(id, superAdminId) {
         const mandate = await this.findOne(id);
