@@ -92,6 +92,50 @@ const SecurityUtils = {
   generateSecureFileName(referenceNumber: string): string {
     const sanitized = referenceNumber.replace(/[^a-zA-Z0-9-_]/g, '_');
     return `mandat_${sanitized}.pdf`;
+  },
+
+  /**
+   * Génère une signature cryptographique identique au backend
+   * Utilise la même logique que SecurityService.generateSignature()
+   */
+  async generateSignature(mandate: MandateData): Promise<string> {
+    // IMPORTANT: Cette clé doit être identique à celle du backend
+    const secretKey = 'mandat-secret-key-2025';
+    
+    // Même logique que le backend: id + referenceNumber + timestamp
+    const dataToSign = `${mandate.id}-${mandate.referenceNumber}-${new Date(mandate.createdAt).getTime()}`;
+    
+    // Générer le HMAC-SHA256 (identique au backend)
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(secretKey);
+    const data = encoder.encode(dataToSign);
+    
+    // Utiliser Web Crypto API pour générer le HMAC (identique à crypto.createHmac)
+    return crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    ).then(key => {
+      return crypto.subtle.sign('HMAC', key, data);
+    }).then(signature => {
+      // Convertir ArrayBuffer en hex string
+      const hashArray = Array.from(new Uint8Array(signature));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      // Même format que le backend: 16 caractères
+      return hashHex.substring(0, 16);
+    });
+  },
+
+  /**
+   * Génère une URL de vérification identique au backend
+   * Utilise la même logique que SecurityService.generateVerificationUrl()
+   */
+  async generateVerificationUrl(mandate: MandateData, baseUrl: string = 'http://localhost:3000'): Promise<string> {
+    const signature = await this.generateSignature(mandate);
+    return `${baseUrl}/verification?ref=${mandate.referenceNumber}&sig=${signature}`;
   }
 };
 
@@ -118,13 +162,12 @@ const PDFMandatGenerator = forwardRef(({
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Générer le QR code de manière sécurisée
+    // Générer le QR code de manière sécurisée (même logique que le backend)
     const generateQRCode = async (): Promise<string> => {
       try {
-        // Générer l'URL de vérification de manière sécurisée
+        // Générer l'URL de vérification avec signature (identique au backend)
         const baseUrl = window.location.origin;
-        const encodedRef = SecurityUtils.encodeURIComponentSafe(secureMandate.referenceNumber);
-        const verificationUrl = `${baseUrl}/verification?ref=${encodedRef}`;
+        const verificationUrl = await SecurityUtils.generateVerificationUrl(secureMandate, baseUrl);
 
         // Validation supplémentaire de l'URL générée
         try {
@@ -137,7 +180,7 @@ const PDFMandatGenerator = forwardRef(({
           width: 150,
           margin: 1,
           color: {
-            dark: '#FF8200', // Orange CI-Mandat
+            dark: '#FF8200', // Orange CI-Mandat (identique au backend)
             light: '#FFFFFF'
           },
           errorCorrectionLevel: 'M' // Niveau de correction d'erreur moyen pour plus de sécurité
