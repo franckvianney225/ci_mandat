@@ -40,7 +40,7 @@ export declare class MandatesService {
     findOne(id: string): Promise<Mandate>;
     create(createMandateDto: CreateMandateDto): Promise<Mandate>;
     update(id: string, updateMandateDto: UpdateMandateDto): Promise<Mandate>;
-    validateByAdmin(id: string, adminId: string): Promise<Mandate>;
+    validateByAdmin(id: string, adminId?: string): Promise<Mandate>;
     validateBySuperAdmin(id: string, superAdminId: string): Promise<Mandate>;
     reject(id: string, reason: string, adminId?: string): Promise<Mandate>;
     getStatistics(): Promise<{

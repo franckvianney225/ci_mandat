@@ -9,7 +9,7 @@ interface ValidateConfirmProps {
   requestInfo: {
     nom: string;
     prenom: string;
-    id: number;
+    id: string;
   } | null;
 }
 

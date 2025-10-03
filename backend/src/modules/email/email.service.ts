@@ -13,6 +13,11 @@ export enum EmailType {
 
 interface EmailTemplateData {
   mandate: Mandate;
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+    contentType: string;
+  }>;
   [key: string]: any;
 }
 
@@ -45,13 +50,18 @@ export class EmailService {
       // Générer le contenu de l'email selon le type
       const { subject, html, text } = this.generateEmailContent(type, data);
 
-      const mailOptions = {
+      const mailOptions: any = {
         from: `${emailConfig.fromName} <${emailConfig.fromEmail}>`,
         to: to,
         subject: subject,
         html: html,
         text: text,
       };
+
+      // Ajouter les pièces jointes si présentes
+      if (data.attachments && data.attachments.length > 0) {
+        mailOptions.attachments = data.attachments;
+      }
 
       const result = await transporter.sendMail(mailOptions);
       

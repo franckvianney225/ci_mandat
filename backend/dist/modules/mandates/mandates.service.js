@@ -142,7 +142,9 @@ let MandatesService = MandatesService_1 = class MandatesService {
         }
         mandate.status = mandate_entity_1.MandateStatus.ADMIN_APPROVED;
         mandate.adminApprovedAt = new Date();
-        mandate.adminApproverId = adminId;
+        if (adminId) {
+            mandate.adminApproverId = adminId;
+        }
         const savedMandate = await this.mandatesRepository.save(mandate);
         await this.sendMandateApprovedEmail(savedMandate);
         return savedMandate;
@@ -232,9 +234,19 @@ let MandatesService = MandatesService_1 = class MandatesService {
     }
     async sendMandateApprovedEmail(mandate) {
         try {
-            const emailSent = await this.emailService.sendEmail(email_service_1.EmailType.MANDATE_APPROVED, mandate.formData.email, { mandate });
+            const { pdfBuffer, fileName } = await this.generatePDF(mandate.id);
+            const emailSent = await this.emailService.sendEmail(email_service_1.EmailType.MANDATE_APPROVED, mandate.formData.email, {
+                mandate,
+                attachments: [
+                    {
+                        filename: fileName,
+                        content: pdfBuffer,
+                        contentType: 'application/pdf'
+                    }
+                ]
+            });
             if (emailSent) {
-                this.logger.log(`Email de validation envoyé au demandeur: ${mandate.formData.email}`);
+                this.logger.log(`Email de validation avec PDF envoyé au demandeur: ${mandate.formData.email}`);
             }
             else {
                 this.logger.warn(`Échec de l'envoi de l'email de validation à: ${mandate.formData.email}`);

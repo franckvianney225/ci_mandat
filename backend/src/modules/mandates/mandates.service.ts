@@ -182,7 +182,7 @@ export class MandatesService {
     return await this.mandatesRepository.save(mandate);
   }
 
-  async validateByAdmin(id: string, adminId: string): Promise<Mandate> {
+  async validateByAdmin(id: string, adminId?: string): Promise<Mandate> {
     const mandate = await this.findOne(id);
 
     if (!mandate.canBeApprovedByAdmin()) {
@@ -191,7 +191,11 @@ export class MandatesService {
 
     mandate.status = MandateStatus.ADMIN_APPROVED;
     mandate.adminApprovedAt = new Date();
-    mandate.adminApproverId = adminId;
+    
+    // Ne définir adminApproverId que si adminId est fourni
+    if (adminId) {
+      mandate.adminApproverId = adminId;
+    }
 
     const savedMandate = await this.mandatesRepository.save(mandate);
     
@@ -319,18 +323,30 @@ export class MandatesService {
   }
 
   /**
-   * Envoie l'email de validation au demandeur
+   * Envoie l'email de validation au demandeur avec le PDF en pièce jointe
    */
   private async sendMandateApprovedEmail(mandate: Mandate): Promise<void> {
     try {
+      // Générer le PDF du mandat
+      const { pdfBuffer, fileName } = await this.generatePDF(mandate.id);
+      
       const emailSent = await this.emailService.sendEmail(
         EmailType.MANDATE_APPROVED,
         mandate.formData.email,
-        { mandate }
+        {
+          mandate,
+          attachments: [
+            {
+              filename: fileName,
+              content: pdfBuffer,
+              contentType: 'application/pdf'
+            }
+          ]
+        }
       );
       
       if (emailSent) {
-        this.logger.log(`Email de validation envoyé au demandeur: ${mandate.formData.email}`);
+        this.logger.log(`Email de validation avec PDF envoyé au demandeur: ${mandate.formData.email}`);
       } else {
         this.logger.warn(`Échec de l'envoi de l'email de validation à: ${mandate.formData.email}`);
       }

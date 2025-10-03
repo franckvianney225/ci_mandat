@@ -571,12 +571,12 @@ export default function RequestsManagement() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         request={selectedRequest}
-        onStatusChange={(requestId: number, newStatus: "pending" | "validated" | "rejected") => {
+        onStatusChange={(requestId: string, newStatus: "pending" | "validated" | "rejected") => {
           // Convertir les types pour la compatibilité
           if (newStatus === "validated") {
-            handleStatusChange(requestId.toString(), "admin_approved");
+            handleStatusChange(requestId, "admin_approved");
           } else if (newStatus === "rejected") {
-            handleStatusChange(requestId.toString(), "rejected");
+            handleStatusChange(requestId, "rejected");
           }
           // Ignorer le statut "pending" car il ne peut pas être changé vers pending
         }}
@@ -590,7 +590,7 @@ export default function RequestsManagement() {
         requestInfo={pendingActionRequest ? {
           nom: pendingActionRequest.nom,
           prenom: pendingActionRequest.prenom,
-          id: parseInt(pendingActionRequest.id)
+          id: pendingActionRequest.id
         } : null}
       />
 
@@ -602,7 +602,7 @@ export default function RequestsManagement() {
         requestInfo={pendingActionRequest ? {
           nom: pendingActionRequest.nom,
           prenom: pendingActionRequest.prenom,
-          id: parseInt(pendingActionRequest.id)
+          id: pendingActionRequest.id
         } : null}
       />
     </div>

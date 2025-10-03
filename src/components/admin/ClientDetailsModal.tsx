@@ -22,7 +22,7 @@ interface ClientDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   request: Request | null;
-  onStatusChange?: (requestId: number, newStatus: "pending" | "validated" | "rejected") => void;
+  onStatusChange?: (requestId: string, newStatus: "pending" | "validated" | "rejected") => void;
 }
 
 export default function ClientDetailsModal({ isOpen, onClose, request, onStatusChange }: ClientDetailsModalProps) {
@@ -41,7 +41,7 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
 
   const handleConfirmValidate = () => {
     if (onStatusChange) {
-      onStatusChange(parseInt(request.id), "validated");
+      onStatusChange(request.id, "validated");
     }
     setIsValidateConfirmOpen(false);
     onClose();
@@ -49,7 +49,7 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
 
   const handleConfirmReject = () => {
     if (onStatusChange) {
-      onStatusChange(parseInt(request.id), "rejected");
+      onStatusChange(request.id, "rejected");
     }
     setIsRejectConfirmOpen(false);
     onClose();
@@ -306,7 +306,7 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
         requestInfo={request ? {
           nom: request.nom,
           prenom: request.prenom,
-          id: parseInt(request.id)
+          id: request.id
         } : null}
       />
 
@@ -318,7 +318,7 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
         requestInfo={request ? {
           nom: request.nom,
           prenom: request.prenom,
-          id: parseInt(request.id)
+          id: request.id
         } : null}
       />
     </Fragment>
