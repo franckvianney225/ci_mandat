@@ -3,7 +3,8 @@
 import { Fragment, useState } from "react";
 import ValidateConfirm from "./ValidateConfirm";
 import RejectConfirm from "./RejectConfirm";
-import PDFMandat from "./PDFMandat";
+import { apiClient } from "@/lib/api";
+import { generateMandatePDF } from "./PDFMandatGenerator";
 
 interface Request {
   id: string;
@@ -62,46 +63,26 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
     setIsRejectConfirmOpen(false);
   };
 
-  const handlePrintPDF = () => {
-    // Créer une nouvelle fenêtre pour l'impression
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    // Générer le contenu HTML du PDF
-    const pdfContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Mandat - ${request.prenom} ${request.nom}</title>
-          <meta charset="UTF-8">
-          <style>
-            @media print {
-              body { margin: 0; }
-              @page { margin: 1cm; }
-            }
-            * { box-sizing: border-box; }
-          </style>
-        </head>
-        <body>
-          ${document.getElementById('pdf-mandat-content')?.outerHTML || ''}
-        </body>
-      </html>
-    `;
-
-    // Écrire le contenu dans la nouvelle fenêtre
-    printWindow.document.write(pdfContent);
-    printWindow.document.close();
-
-    // Attendre que le contenu soit chargé puis imprimer
-    printWindow.onload = () => {
-      printWindow.focus();
-      printWindow.print();
-
-      // Fermer la fenêtre après l'impression (optionnel)
-      printWindow.onafterprint = () => {
-        printWindow.close();
+  const handlePrintPDF = async () => {
+    try {
+      // Utiliser la génération frontend avec jspdf
+      const mandateData = {
+        id: request.id,
+        nom: request.nom,
+        prenom: request.prenom,
+        email: request.email,
+        telephone: request.telephone,
+        circonscription: request.circonscription,
+        referenceNumber: request.referenceNumber,
+        status: request.status,
+        createdAt: request.createdAt
       };
-    };
+      
+      generateMandatePDF(mandateData);
+    } catch (error) {
+      console.error('Erreur lors de la génération du PDF:', error);
+      alert('Erreur lors de la génération du PDF.');
+    }
   };
 
   const getStatusClasses = (status: string) => {

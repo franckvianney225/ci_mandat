@@ -81,6 +81,20 @@ let MandatesController = class MandatesController {
         const adminId = req.user.id;
         return this.mandatesService.reject(id, rejectMandateDto.reason, adminId);
     }
+    async generatePDF(id, res) {
+        try {
+            const { pdfBuffer, fileName } = await this.mandatesService.generatePDF(id);
+            res.set({
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': `attachment; filename="${fileName}"`,
+                'Content-Length': pdfBuffer.length,
+            });
+            res.send(pdfBuffer);
+        }
+        catch (error) {
+            throw new common_1.HttpException(error.message || 'Erreur lors de la génération du PDF', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 };
 exports.MandatesController = MandatesController;
 __decorate([
@@ -165,6 +179,16 @@ __decorate([
     __metadata("design:paramtypes", [String, RejectMandateDto, Object]),
     __metadata("design:returntype", Promise)
 ], MandatesController.prototype, "reject", null);
+__decorate([
+    (0, common_1.Get)(':id/pdf'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, roles_decorator_1.Roles)(user_entity_1.UserRole.ADMIN, user_entity_1.UserRole.SUPER_ADMIN),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], MandatesController.prototype, "generatePDF", null);
 exports.MandatesController = MandatesController = __decorate([
     (0, common_1.Controller)('mandates'),
     __metadata("design:paramtypes", [mandates_service_1.MandatesService])

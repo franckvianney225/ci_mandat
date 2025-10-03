@@ -342,6 +342,23 @@ class ApiClient {
       body: JSON.stringify({ reason }),
     });
   }
+
+  async generateMandatePDF(mandateId: string): Promise<Blob> {
+    const token = this.getToken();
+    
+    const response = await fetch(`${API_BASE_URL}/mandates/${mandateId}/pdf`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new ApiError(response.status, `HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.blob();
+  }
 }
 
 export const apiClient = new ApiClient();

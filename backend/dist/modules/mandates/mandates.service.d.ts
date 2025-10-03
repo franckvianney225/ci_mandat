@@ -46,5 +46,11 @@ export declare class MandatesService {
         rejected: number;
     }>;
     getRecentMandates(limit?: number): Promise<Mandate[]>;
+    generatePDF(mandateId: string): Promise<{
+        pdfBuffer: Buffer;
+        fileName: string;
+    }>;
+    private generatePDFHtml;
+    private generatePdfFromHtml;
 }
 export {};

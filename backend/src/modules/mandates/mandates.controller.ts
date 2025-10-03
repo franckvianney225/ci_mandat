@@ -15,12 +15,14 @@ import {
   Catch,
   ExceptionFilter,
   ArgumentsHost,
+  Res,
 } from '@nestjs/common';
 import { MandatesService } from './mandates.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../entities/user.entity';
 import { MandateStatus } from '../../entities/mandate.entity';
+import { Response } from 'express';
 
 class CreateMandateDto {
   nom: string;
@@ -144,5 +146,30 @@ export class MandatesController {
   ) {
     const adminId = req.user.id;
     return this.mandatesService.reject(id, rejectMandateDto.reason, adminId);
+  }
+
+  @Get(':id/pdf')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  async generatePDF(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const { pdfBuffer, fileName } = await this.mandatesService.generatePDF(id);
+      
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Length': pdfBuffer.length,
+      });
+      
+      res.send(pdfBuffer);
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Erreur lors de la génération du PDF',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { MandatesService } from './mandates.service';
 import { MandateStatus } from '../../entities/mandate.entity';
+import { Response } from 'express';
 declare class UpdateMandateDto {
     status?: MandateStatus;
     rejectionReason?: string;
@@ -47,5 +48,6 @@ export declare class MandatesController {
     validateByAdmin(id: string, req: any): Promise<import("../../entities/mandate.entity").Mandate>;
     validateBySuperAdmin(id: string, req: any): Promise<import("../../entities/mandate.entity").Mandate>;
     reject(id: string, rejectMandateDto: RejectMandateDto, req: any): Promise<import("../../entities/mandate.entity").Mandate>;
+    generatePDF(id: string, res: Response): Promise<void>;
 }
 export {};
