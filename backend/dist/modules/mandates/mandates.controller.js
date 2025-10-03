@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MandatesController = void 0;
 const common_1 = require("@nestjs/common");
@@ -18,6 +19,7 @@ const mandates_service_1 = require("./mandates.service");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 const user_entity_1 = require("../../entities/user.entity");
+const express_1 = require("express");
 class CreateMandateDto {
 }
 class UpdateMandateDto {
@@ -186,7 +188,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, typeof (_a = typeof express_1.Response !== "undefined" && express_1.Response) === "function" ? _a : Object]),
     __metadata("design:returntype", Promise)
 ], MandatesController.prototype, "generatePDF", null);
 exports.MandatesController = MandatesController = __decorate([

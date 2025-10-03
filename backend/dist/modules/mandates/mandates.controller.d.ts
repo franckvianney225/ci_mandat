@@ -29,18 +29,18 @@ export declare class MandatesController {
         message?: undefined;
     }>;
     findAll(filters: MandateFiltersDto): Promise<{
-        data: import("../../entities/mandate.entity").Mandate[];
-        total: number;
+        data: any;
+        total: any;
         page: number;
         limit: number;
         totalPages: number;
     }>;
     getStatistics(): Promise<{
-        total: number;
-        pending: number;
-        adminApproved: number;
-        superAdminApproved: number;
-        rejected: number;
+        total: any;
+        pending: any;
+        adminApproved: any;
+        superAdminApproved: any;
+        rejected: any;
     }>;
     getRecentMandates(): Promise<import("../../entities/mandate.entity").Mandate[]>;
     findOne(id: string): Promise<import("../../entities/mandate.entity").Mandate>;

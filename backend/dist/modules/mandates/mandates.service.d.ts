@@ -26,8 +26,8 @@ export declare class MandatesService {
     private usersRepository;
     constructor(mandatesRepository: Repository<Mandate>, usersRepository: Repository<User>);
     findAll(filters?: MandateFilters): Promise<{
-        data: Mandate[];
-        total: number;
+        data: any;
+        total: any;
         page: number;
         limit: number;
         totalPages: number;
@@ -39,11 +39,11 @@ export declare class MandatesService {
     validateBySuperAdmin(id: string, superAdminId: string): Promise<Mandate>;
     reject(id: string, reason: string, adminId?: string): Promise<Mandate>;
     getStatistics(): Promise<{
-        total: number;
-        pending: number;
-        adminApproved: number;
-        superAdminApproved: number;
-        rejected: number;
+        total: any;
+        pending: any;
+        adminApproved: any;
+        superAdminApproved: any;
+        rejected: any;
     }>;
     getRecentMandates(limit?: number): Promise<Mandate[]>;
     generatePDF(mandateId: string): Promise<{
