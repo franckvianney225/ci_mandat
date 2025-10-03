@@ -52,7 +52,11 @@ const mapBackendStatusToFrontend = (backendStatus: string): "pending" | "validat
   }
 };
 
-export default function Dashboard() {
+interface DashboardProps {
+  onSectionChange?: (section: string) => void;
+}
+
+export default function Dashboard({ onSectionChange }: DashboardProps) {
   const router = useRouter();
   const [stats, setStats] = useState<DashboardStats>({
     totalRequests: 0,
@@ -66,7 +70,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   const handleViewAllRequests = () => {
-    router.push('/ci-mandat-admin?tab=requests');
+    if (onSectionChange) {
+      onSectionChange('requests');
+    } else {
+      router.push('/ci-mandat-admin?tab=requests');
+    }
   };
 
 

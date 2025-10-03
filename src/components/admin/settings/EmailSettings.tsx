@@ -1,6 +1,8 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { apiClient } from "@/lib/api";
 
 interface EmailConfig {
   smtpHost: string;
@@ -15,73 +17,158 @@ interface EmailConfig {
 
 export default function EmailSettings() {
   const [config, setConfig] = useState<EmailConfig>({
-    smtpHost: "smtp.gmail.com",
-    smtpPort: "587",
+    smtpHost: "",
+    smtpPort: "",
     smtpUsername: "",
     smtpPassword: "",
-    fromEmail: "noreply@ci-mandat.ci",
-    fromName: "CI-Mandat",
+    fromEmail: "",
+    fromName: "",
     useSSL: false,
     useTLS: true,
   });
 
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Charger la configuration existante au montage du composant
+  useEffect(() => {
+    const loadEmailConfig = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiClient.getEmailConfig();
+        
+        if (response.success && response.data) {
+          setConfig(response.data);
+        } else {
+          console.error('Erreur lors du chargement de la configuration:', response.error);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement de la configuration email:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadEmailConfig();
+  }, []);
 
   const handleInputChange = (field: keyof EmailConfig, value: string | boolean) => {
     setConfig(prev => ({ ...prev, [field]: value }));
+    setTestResult(null);
+    setSaveMessage(null);
   };
 
   const handleSave = async () => {
     try {
-      // TODO: Implémenter l'appel API pour sauvegarder la configuration
-      console.log("Sauvegarde de la configuration:", config);
-      alert("Configuration SMTP sauvegardée avec succès !");
+      setIsSaving(true);
+      setSaveMessage(null);
+      
+      const response = await apiClient.updateEmailConfig(config);
+      
+      if (response.success) {
+        setSaveMessage({
+          type: 'success',
+          message: response.message || 'Configuration SMTP sauvegardée avec succès !'
+        });
+      } else {
+        setSaveMessage({
+          type: 'error',
+          message: response.error || 'Erreur lors de la sauvegarde de la configuration'
+        });
+      }
     } catch (error) {
-      console.error("Erreur lors de la sauvegarde:", error);
-      alert("Erreur lors de la sauvegarde de la configuration");
+      console.error('Erreur lors de la sauvegarde:', error);
+      setSaveMessage({
+        type: 'error',
+        message: 'Erreur de connexion au serveur'
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleTestConnection = async () => {
     setIsTesting(true);
     setTestResult(null);
+    setSaveMessage(null);
     
     try {
-      // TODO: Implémenter le test de connexion SMTP
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setTestResult({
-        success: true,
-        message: "Connexion SMTP réussie ! Les paramètres sont corrects."
-      });
+      const response = await apiClient.testEmailConnection(config);
+      
+      if (response.success) {
+        setTestResult({
+          success: true,
+          message: response.message || 'Connexion SMTP réussie ! Les paramètres sont corrects.'
+        });
+      } else {
+        setTestResult({
+          success: false,
+          message: response.error || 'Échec de la connexion SMTP. Vérifiez vos paramètres.'
+        });
+      }
     } catch (error) {
+      console.error('Erreur lors du test de connexion:', error);
       setTestResult({
         success: false,
-        message: "Échec de la connexion SMTP. Vérifiez vos paramètres."
+        message: 'Erreur lors du test de connexion SMTP'
       });
     } finally {
       setIsTesting(false);
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="border-b border-gray-200 pb-4">
+          <h2 className="text-xl font-semibold text-gray-900">Configuration SMTP</h2>
+          <p className="text-gray-600 mt-1">Configurez les paramètres d'envoi d'emails pour les notifications</p>
+        </div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-10 bg-gray-200 rounded"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-10 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* En-tête */}
       <div className="border-b border-gray-200 pb-4">
         <h2 className="text-xl font-semibold text-gray-900">Configuration SMTP</h2>
-        <p className="text-gray-600 mt-1">
-          Configurez les paramètres d'envoi d'emails pour les notifications
-        </p>
+        <p className="text-gray-600 mt-1">Configurez les paramètres d'envoi d'emails pour les notifications</p>
       </div>
+
+      {/* Message de sauvegarde */}
+      {saveMessage && (
+        <div className={`p-4 rounded-lg border ${saveMessage.type === 'success' ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
+          <div className="flex items-center">
+            {saveMessage.type === 'success' ? (
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            )}
+            {saveMessage.message}
+          </div>
+        </div>
+      )}
 
       {/* Configuration SMTP */}
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {/* Serveur SMTP */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Serveur SMTP
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Serveur SMTP</label>
             <input
               type="text"
               value={config.smtpHost}
@@ -93,9 +180,7 @@ export default function EmailSettings() {
 
           {/* Port SMTP */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Port SMTP
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Port SMTP</label>
             <input
               type="text"
               value={config.smtpPort}
@@ -109,9 +194,7 @@ export default function EmailSettings() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {/* Nom d'utilisateur */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nom d'utilisateur SMTP
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Nom d'utilisateur SMTP</label>
             <input
               type="text"
               value={config.smtpUsername}
@@ -123,9 +206,7 @@ export default function EmailSettings() {
 
           {/* Mot de passe */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Mot de passe SMTP
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Mot de passe SMTP</label>
             <input
               type="password"
               value={config.smtpPassword}
@@ -139,9 +220,7 @@ export default function EmailSettings() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {/* Email expéditeur */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email expéditeur
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email expéditeur</label>
             <input
               type="email"
               value={config.fromEmail}
@@ -153,9 +232,7 @@ export default function EmailSettings() {
 
           {/* Nom expéditeur */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nom expéditeur
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Nom expéditeur</label>
             <input
               type="text"
               value={config.fromName}
@@ -169,7 +246,6 @@ export default function EmailSettings() {
         {/* Options de sécurité */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium text-gray-900">Options de sécurité</h3>
-          
           <div className="flex items-center space-x-6">
             <label className="flex items-center">
               <input
@@ -180,7 +256,6 @@ export default function EmailSettings() {
               />
               <span className="ml-2 text-sm text-gray-700">Utiliser SSL</span>
             </label>
-
             <label className="flex items-center">
               <input
                 type="checkbox"
@@ -195,11 +270,7 @@ export default function EmailSettings() {
 
         {/* Test de connexion */}
         {testResult && (
-          <div className={`p-4 rounded-lg border ${
-            testResult.success 
-              ? "bg-green-50 border-green-200 text-green-800"
-              : "bg-red-50 border-red-200 text-red-800"
-          }`}>
+          <div className={`p-4 rounded-lg border ${testResult.success ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
             <div className="flex items-center">
               {testResult.success ? (
                 <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -219,7 +290,7 @@ export default function EmailSettings() {
         <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
           <button
             onClick={handleTestConnection}
-            disabled={isTesting}
+            disabled={isTesting || isSaving}
             className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF8200] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
             {isTesting ? (
@@ -242,12 +313,25 @@ export default function EmailSettings() {
 
           <button
             onClick={handleSave}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#FF8200] hover:bg-[#E67300] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF8200] transition-all duration-200"
+            disabled={isSaving || isTesting}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#FF8200] hover:bg-[#E67300] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF8200] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            Sauvegarder
+            {isSaving ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Sauvegarde...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Sauvegarder
+              </>
+            )}
           </button>
         </div>
       </div>

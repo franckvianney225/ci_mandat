@@ -18,6 +18,7 @@ const database_config_1 = require("./config/database.config");
 const auth_module_1 = require("./modules/auth/auth.module");
 const users_module_1 = require("./modules/users/users.module");
 const mandates_module_1 = require("./modules/mandates/mandates.module");
+const settings_module_1 = require("./modules/settings/settings.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -94,6 +95,7 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
             mandates_module_1.MandatesModule,
+            settings_module_1.SettingsModule,
         ],
         providers: [
             {

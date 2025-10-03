@@ -265,19 +265,46 @@ class ApiClient {
   }
 
   // Settings API
-  async getSettings(): Promise<ApiResponse<unknown>> {
-    return this.request('/settings');
+  async getEmailConfig(): Promise<ApiResponse<{
+    smtpHost: string;
+    smtpPort: string;
+    smtpUsername: string;
+    smtpPassword: string;
+    fromEmail: string;
+    fromName: string;
+    useSSL: boolean;
+    useTLS: boolean;
+  }>> {
+    return this.request('/settings/email');
   }
 
-  async updateSettings(settings: unknown): Promise<ApiResponse> {
-    return this.request('/settings', {
-      method: 'PUT',
-      body: JSON.stringify(settings),
+  async updateEmailConfig(config: {
+    smtpHost: string;
+    smtpPort: string;
+    smtpUsername: string;
+    smtpPassword: string;
+    fromEmail: string;
+    fromName: string;
+    useSSL: boolean;
+    useTLS: boolean;
+  }): Promise<ApiResponse> {
+    return this.request('/settings/email', {
+      method: 'POST',
+      body: JSON.stringify(config),
     });
   }
 
-  async testEmailConnection(config: unknown): Promise<ApiResponse> {
-    return this.request('/settings/test-email', {
+  async testEmailConnection(config: {
+    smtpHost: string;
+    smtpPort: string;
+    smtpUsername: string;
+    smtpPassword: string;
+    fromEmail: string;
+    fromName: string;
+    useSSL: boolean;
+    useTLS: boolean;
+  }): Promise<ApiResponse> {
+    return this.request('/settings/email/test', {
       method: 'POST',
       body: JSON.stringify(config),
     });

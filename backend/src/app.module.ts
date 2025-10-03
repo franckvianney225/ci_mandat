@@ -13,6 +13,7 @@ import typeOrmConfig from './config/database.config';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { MandatesModule } from './modules/mandates/mandates.module';
+import { SettingsModule } from './modules/settings/settings.module';
 
 // Guards et Intercepteurs
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -114,6 +115,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     AuthModule,
     UsersModule,
     MandatesModule,
+    SettingsModule,
   ],
   providers: [
     // Guards globaux

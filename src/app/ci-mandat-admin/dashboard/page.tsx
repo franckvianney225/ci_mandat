@@ -32,7 +32,7 @@ export default function AdminDashboard() {
   const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
-        return <Dashboard />;
+        return <Dashboard onSectionChange={setActiveSection} />;
       case "requests":
         return <RequestsManagement />;
       case "users":
@@ -40,7 +40,7 @@ export default function AdminDashboard() {
       case "settings":
         return <Settings />;
       default:
-        return <Dashboard />;
+        return <Dashboard onSectionChange={setActiveSection} />;
     }
   };
 
