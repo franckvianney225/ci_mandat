@@ -28,10 +28,15 @@ interface AuthUser {
   id: string;
   email: string;
   role: "admin" | "super_admin";
+  status: "active" | "inactive" | "suspended" | "pending_verification";
   personalData: {
     firstName: string;
     lastName: string;
+    phone?: string;
   };
+  createdAt: string;
+  lastLogin?: string;
+  loginAttempts: number;
 }
 
 interface Request {
@@ -219,7 +224,7 @@ class ApiClient {
   }
 
   async verifyToken(): Promise<ApiResponse<{ user: AuthUser }>> {
-    return this.request('/auth/verify');
+    return this.request('/auth/profile');
   }
 
   // Dashboard API

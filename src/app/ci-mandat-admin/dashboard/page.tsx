@@ -7,27 +7,62 @@ import Dashboard from "@/components/admin/Dashboard";
 import RequestsManagement from "@/components/admin/RequestsManagement";
 import UsersManagement from "@/components/admin/UsersManagement";
 import Settings from "@/components/admin/Settings";
+import { apiClient } from "@/lib/api";
+
+interface User {
+  id: string;
+  email: string;
+  role: "admin" | "super_admin";
+  personalData: {
+    firstName: string;
+    lastName: string;
+  };
+}
 
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [activeSection, setActiveSection] = useState("dashboard");
   const router = useRouter();
 
   useEffect(() => {
-    // Vérifier si l'utilisateur est authentifié
-    const checkAuth = () => {
+    // Vérifier si l'utilisateur est authentifié et récupérer ses informations
+    const checkAuth = async () => {
       const token = localStorage.getItem("adminToken");
       if (!token) {
         router.push("/ci-mandat-admin");
-      } else {
-        setIsAuthenticated(true);
+        return;
       }
-      setIsLoading(false);
+
+      try {
+        const response = await apiClient.verifyToken();
+        if (response.success && response.data) {
+          // L'endpoint /auth/profile retourne directement l'utilisateur
+          setCurrentUser(response.data as unknown as User);
+          setIsAuthenticated(true);
+        } else {
+          router.push("/ci-mandat-admin");
+        }
+      } catch (error) {
+        console.error("Erreur de vérification du token:", error);
+        router.push("/ci-mandat-admin");
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     checkAuth();
   }, [router]);
+
+  // Rediriger si l'utilisateur admin essaie d'accéder à des sections réservées au super_admin
+  useEffect(() => {
+    if (currentUser && currentUser.role === "admin") {
+      if (activeSection === "users" || activeSection === "settings") {
+        setActiveSection("dashboard");
+      }
+    }
+  }, [currentUser, activeSection]);
 
   const renderContent = () => {
     switch (activeSection) {

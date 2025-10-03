@@ -1,14 +1,46 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { apiClient } from "@/lib/api";
 
 interface SidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
 }
 
+interface User {
+  id: string;
+  email: string;
+  role: "admin" | "super_admin";
+  personalData: {
+    firstName: string;
+    lastName: string;
+  };
+}
+
 export default function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
   const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await apiClient.verifyToken();
+        if (response.success && response.data) {
+          // L'endpoint /auth/profile retourne directement l'utilisateur
+          setCurrentUser(response.data as unknown as User);
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération de l'utilisateur:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
@@ -24,6 +56,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
       ),
+      visible: true, // Toujours visible
     },
     {
       id: "requests",
@@ -33,6 +66,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       ),
+      visible: true, // Toujours visible
     },
     {
       id: "users",
@@ -42,6 +76,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
         </svg>
       ),
+      visible: currentUser?.role === "super_admin", // Seulement pour super_admin
     },
     {
       id: "settings",
@@ -52,8 +87,12 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       ),
+      visible: currentUser?.role === "super_admin", // Seulement pour super_admin
     },
   ];
+
+  // Filtrer les éléments de menu selon la visibilité
+  const visibleMenuItems = menuItems.filter(item => item.visible);
 
   return (
     <div className="w-64 bg-gradient-to-b from-white to-gray-50 shadow-xl border-r border-gray-100 flex flex-col transition-all duration-300 hover:shadow-2xl">
@@ -75,7 +114,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
       {/* Navigation améliorée */}
       <nav className="flex-1 px-3 py-6">
         <ul className="space-y-1">
-          {menuItems.map((item) => (
+          {visibleMenuItems.map((item) => (
             <li key={item.id}>
               <button
                 onClick={() => onSectionChange(item.id)}
