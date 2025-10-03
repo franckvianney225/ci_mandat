@@ -14,6 +14,10 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { MandatesModule } from './modules/mandates/mandates.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { EmailModule } from './modules/email/email.module';
+import { PdfModule } from './modules/pdf/pdf.module';
+import { SecurityModule } from './modules/security/security.module';
+import { VerificationModule } from './modules/verification/verification.module';
 
 // Guards et Intercepteurs
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -116,6 +120,10 @@ import { RolesGuard } from './common/guards/roles.guard';
     UsersModule,
     MandatesModule,
     SettingsModule,
+    EmailModule,
+    PdfModule,
+    SecurityModule,
+    VerificationModule,
   ],
   providers: [
     // Guards globaux

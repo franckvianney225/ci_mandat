@@ -1,13 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { jsPDF } from 'jspdf';
 import { Mandate } from '../../entities/mandate.entity';
+import { SecurityService } from '../security/security.service';
 
 @Injectable()
 export class PdfService {
   private readonly logger = new Logger(PdfService.name);
 
+  constructor(private securityService: SecurityService) {}
+
   /**
-   * Génère un PDF de mandat avec exactement le même design que le frontend
+   * Génère un PDF de mandat avec QR code de vérification
    */
   async generateMandatePDF(mandate: Mandate): Promise<{ pdfBuffer: Buffer; fileName: string }> {
     try {
@@ -16,6 +19,9 @@ export class PdfService {
       const doc = new jsPDF('portrait', 'mm', 'a4');
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Générer le QR code
+      const qrCodeBuffer = await this.securityService.generateQRCodeBuffer(mandate);
       
       // Couleurs
       const primaryColor: [number, number, number] = [0, 0, 0]; // Noir
@@ -156,11 +162,28 @@ export class PdfService {
       doc.setFontSize(12);
       doc.text(`Dr ${mandate.formData.prenom} ${mandate.formData.nom}`, signatureX, yPos, { align: 'center' });
       
-      // Référence en bas
+      // Ajouter le QR code en bas à droite
+      const qrCodeWidth = 30;
+      const qrCodeHeight = 30;
+      const qrCodeX = pageWidth - qrCodeWidth - 20;
+      const qrCodeY = pageHeight - qrCodeHeight - 20;
+      
+      // Convertir le buffer QR code en base64 pour l'ajouter au PDF
+      const qrCodeBase64 = qrCodeBuffer.toString('base64');
+      doc.addImage(`data:image/png;base64,${qrCodeBase64}`, 'PNG', qrCodeX, qrCodeY, qrCodeWidth, qrCodeHeight);
+      
+      // Texte sous le QR code
+      doc.setFontSize(6);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 100, 100);
+      doc.text('Scanner pour vérifier', qrCodeX, qrCodeY + qrCodeHeight + 5, { align: 'center' });
+      doc.text('l\'authenticité', qrCodeX + qrCodeWidth / 2, qrCodeY + qrCodeHeight + 8, { align: 'center' });
+
+      // Référence en bas à gauche
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(100, 100, 100);
-      doc.text(`Référence: ${mandate.referenceNumber}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+      doc.text(`Référence: ${mandate.referenceNumber}`, 20, pageHeight - 10);
 
       // Convertir le PDF en buffer
       const pdfBuffer = Buffer.from(doc.output('arraybuffer'));

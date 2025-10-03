@@ -19,6 +19,10 @@ const auth_module_1 = require("./modules/auth/auth.module");
 const users_module_1 = require("./modules/users/users.module");
 const mandates_module_1 = require("./modules/mandates/mandates.module");
 const settings_module_1 = require("./modules/settings/settings.module");
+const email_module_1 = require("./modules/email/email.module");
+const pdf_module_1 = require("./modules/pdf/pdf.module");
+const security_module_1 = require("./modules/security/security.module");
+const verification_module_1 = require("./modules/verification/verification.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -96,6 +100,10 @@ exports.AppModule = AppModule = __decorate([
             users_module_1.UsersModule,
             mandates_module_1.MandatesModule,
             settings_module_1.SettingsModule,
+            email_module_1.EmailModule,
+            pdf_module_1.PdfModule,
+            security_module_1.SecurityModule,
+            verification_module_1.VerificationModule,
         ],
         providers: [
             {
