@@ -13,12 +13,16 @@ const mandates_service_1 = require("./mandates.service");
 const mandates_controller_1 = require("./mandates.controller");
 const mandate_entity_1 = require("../../entities/mandate.entity");
 const user_entity_1 = require("../../entities/user.entity");
+const settings_module_1 = require("../settings/settings.module");
 let MandatesModule = class MandatesModule {
 };
 exports.MandatesModule = MandatesModule;
 exports.MandatesModule = MandatesModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([mandate_entity_1.Mandate, user_entity_1.User])],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([mandate_entity_1.Mandate, user_entity_1.User]),
+            settings_module_1.SettingsModule,
+        ],
         controllers: [mandates_controller_1.MandatesController],
         providers: [mandates_service_1.MandatesService],
         exports: [mandates_service_1.MandatesService],

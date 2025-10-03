@@ -8,5 +8,6 @@ import { EmailConfigEntity } from '../../entities/email-config.entity';
   imports: [TypeOrmModule.forFeature([EmailConfigEntity])],
   controllers: [SettingsController],
   providers: [SettingsService],
+  exports: [SettingsService],
 })
 export class SettingsModule {}

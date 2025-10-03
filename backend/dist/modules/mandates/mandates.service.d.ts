@@ -1,6 +1,7 @@
 import { Repository } from 'typeorm';
 import { Mandate, MandateStatus } from '../../entities/mandate.entity';
 import { User } from '../../entities/user.entity';
+import { SettingsService } from '../settings/settings.service';
 interface CreateMandateDto {
     nom: string;
     prenom: string;
@@ -24,10 +25,12 @@ interface MandateFilters {
 export declare class MandatesService {
     private mandatesRepository;
     private usersRepository;
-    constructor(mandatesRepository: Repository<Mandate>, usersRepository: Repository<User>);
+    private settingsService;
+    private readonly logger;
+    constructor(mandatesRepository: Repository<Mandate>, usersRepository: Repository<User>, settingsService: SettingsService);
     findAll(filters?: MandateFilters): Promise<{
-        data: any;
-        total: any;
+        data: Mandate[];
+        total: number;
         page: number;
         limit: number;
         totalPages: number;
@@ -39,18 +42,18 @@ export declare class MandatesService {
     validateBySuperAdmin(id: string, superAdminId: string): Promise<Mandate>;
     reject(id: string, reason: string, adminId?: string): Promise<Mandate>;
     getStatistics(): Promise<{
-        total: any;
-        pending: any;
-        adminApproved: any;
-        superAdminApproved: any;
-        rejected: any;
+        total: number;
+        pending: number;
+        adminApproved: number;
+        superAdminApproved: number;
+        rejected: number;
     }>;
     getRecentMandates(limit?: number): Promise<Mandate[]>;
     generatePDF(mandateId: string): Promise<{
         pdfBuffer: Buffer;
         fileName: string;
     }>;
-    private generatePDFHtml;
-    private generatePdfFromHtml;
+    private sendAdminNotifications;
+    private generateNotificationEmail;
 }
 export {};

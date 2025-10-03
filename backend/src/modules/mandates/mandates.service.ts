@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere, Like } from 'typeorm';
 
 import { Mandate, MandateStatus } from '../../entities/mandate.entity';
 import { User } from '../../entities/user.entity';
+import { SettingsService } from '../settings/settings.service';
 
 interface CreateMandateDto {
   nom: string;
@@ -30,11 +31,14 @@ interface MandateFilters {
 
 @Injectable()
 export class MandatesService {
+  private readonly logger = new Logger(MandatesService.name);
+
   constructor(
     @InjectRepository(Mandate)
     private mandatesRepository: Repository<Mandate>,
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private settingsService: SettingsService,
   ) {}
 
   async findAll(filters: MandateFilters = {}) {
@@ -122,7 +126,12 @@ export class MandatesService {
     mandate.formData = createMandateDto as any;
     mandate.status = MandateStatus.PENDING_VALIDATION;
     
-    return await this.mandatesRepository.save(mandate);
+    const savedMandate = await this.mandatesRepository.save(mandate);
+    
+    // Envoyer les notifications aux administrateurs
+    await this.sendAdminNotifications(savedMandate);
+    
+    return savedMandate;
   }
 
   async update(id: string, updateMandateDto: UpdateMandateDto): Promise<Mandate> {
@@ -253,14 +262,6 @@ export class MandatesService {
       throw new BadRequestException('Seuls les mandats approuvés peuvent générer un PDF');
     }
 
-    // Générer le contenu HTML du PDF
-    const htmlContent = this.generatePDFHtml(mandate);
-    
-    // Utiliser Puppeteer pour générer le PDF
-    const pdfBuffer = await this.generatePdfFromHtml(htmlContent);
-    
-    const fileName = `mandat_${mandate.referenceNumber}_${Date.now()}.pdf`;
-    
     // Mettre à jour le mandat avec les informations du PDF
     mandate.pdfGenerated = true;
     mandate.pdfGeneratedAt = new Date();
@@ -268,15 +269,70 @@ export class MandatesService {
     
     await this.mandatesRepository.save(mandate);
     
+    // Retourner un PDF vide car la génération se fait côté frontend
+    const fileName = `mandat_${mandate.referenceNumber}_${Date.now()}.pdf`;
+    const pdfBuffer = Buffer.from('PDF généré côté frontend');
+    
     return { pdfBuffer, fileName };
   }
 
-  private generatePDFHtml(mandate: Mandate): string {
-    const { formData, referenceNumber } = mandate;
-    const currentDate = new Date().toLocaleDateString('fr-FR', {
+  private async sendAdminNotifications(mandate: Mandate): Promise<void> {
+    try {
+      // Récupérer tous les administrateurs
+      const admins = await this.usersRepository.find({
+        where: [
+          { role: 'admin' as any },
+          { role: 'super_admin' as any }
+        ]
+      });
+
+      if (admins.length === 0) {
+        this.logger.warn('Aucun administrateur trouvé pour envoyer les notifications');
+        return;
+      }
+
+      // Récupérer la configuration email
+      const emailConfig = await this.settingsService.getEmailConfig();
+      
+      if (!emailConfig || !emailConfig.smtpHost || !emailConfig.smtpPort || !emailConfig.smtpUsername || !emailConfig.smtpPassword) {
+        this.logger.warn('Configuration SMTP non disponible pour l\'envoi de notifications');
+        return;
+      }
+
+      const transporter = this.settingsService.createTransporter(emailConfig);
+
+      // Préparer le contenu de l'email
+      const subject = 'Nouvelle demande de mandat reçue';
+      const htmlContent = this.generateNotificationEmail(mandate);
+
+      // Envoyer l'email à tous les administrateurs
+      const emailPromises = admins.map(admin => {
+        return transporter.sendMail({
+          from: emailConfig.fromEmail || emailConfig.smtpUsername,
+          to: admin.email,
+          subject: subject,
+          html: htmlContent,
+        });
+      });
+
+      await Promise.all(emailPromises);
+      
+      this.logger.log(`Notifications envoyées à ${admins.length} administrateur(s)`);
+      
+    } catch (error) {
+      this.logger.error('Erreur lors de l\'envoi des notifications aux administrateurs:', error);
+      // Ne pas bloquer la création du mandat en cas d'erreur d'envoi d'email
+    }
+  }
+
+  private generateNotificationEmail(mandate: Mandate): string {
+    const { formData, createdAt } = mandate;
+    const formattedDate = new Date(createdAt).toLocaleDateString('fr-FR', {
       day: 'numeric',
       month: 'long',
-      year: 'numeric'
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
 
     return `
@@ -284,231 +340,112 @@ export class MandatesService {
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Mandat - ${referenceNumber}</title>
+  <title>Nouvelle demande de mandat</title>
   <style>
     body {
-      font-family: 'Times New Roman', serif;
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
       margin: 0;
-      padding: 40px;
-      color: #000;
-      line-height: 1.4;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
     }
     .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 40px;
-    }
-    .cei-logo {
-      text-align: left;
-    }
-    .cei-logo .title {
-      font-size: 14px;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-    .cei-logo .circle {
-      width: 60px;
-      height: 60px;
-      background-color: #FFD700;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 10px 0;
-    }
-    .cei-logo .circle span {
-      font-size: 12px;
-      font-weight: bold;
-    }
-    .republic {
-      text-align: right;
-      font-size: 14px;
-    }
-    .main-title {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .main-title .border-box {
-      border: 4px solid #000;
+      background: #1E40AF;
+      color: white;
       padding: 20px;
+      text-align: center;
+      border-radius: 8px 8px 0 0;
+      margin: -20px -20px 20px -20px;
+    }
+    .content {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
       margin-bottom: 20px;
     }
-    .main-title h1 {
-      font-size: 24px;
-      font-weight: bold;
-      margin: 0 0 10px 0;
+    .info-item {
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #f8f9fa;
+      border-left: 4px solid #1E40AF;
     }
-    .main-title .date {
-      font-size: 20px;
+    .info-label {
       font-weight: bold;
       color: #1E40AF;
     }
-    .subtitle {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .subtitle h2 {
-      font-size: 18px;
-      font-weight: bold;
-      text-decoration: underline;
-      margin: 5px 0;
-    }
-    .content {
-      font-size: 14px;
-      margin-bottom: 40px;
-    }
-    .content p {
-      margin-bottom: 15px;
-    }
-    .content strong {
-      font-weight: bold;
-    }
     .footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      margin-top: 60px;
-    }
-    .date-section {
-      font-size: 14px;
-    }
-    .signature {
       text-align: center;
-    }
-    .signature .label {
-      font-size: 14px;
-      margin-bottom: 30px;
-    }
-    .signature .name {
-      font-size: 18px;
-      font-weight: bold;
-      text-decoration: underline;
-    }
-    .reference {
-      text-align: center;
-      font-size: 12px;
       color: #666;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+    .button {
+      display: inline-block;
+      background: #1E40AF;
+      color: white;
+      padding: 12px 24px;
+      text-decoration: none;
+      border-radius: 4px;
       margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <!-- En-tête avec logos -->
-  <div class="header">
-    <div class="cei-logo">
-      <div class="title">COMMISSION ELECTORALE</div>
-      <div class="title">INDÉPENDANTE</div>
-      <div class="circle">
-        <span>CEI</span>
+  <div class="container">
+    <div class="header">
+      <h1>Nouvelle Demande de Mandat</h1>
+      <p>Une nouvelle demande a été soumise le ${formattedDate}</p>
+    </div>
+    
+    <div class="content">
+      <h2>Informations du demandeur</h2>
+      
+      <div class="info-item">
+        <span class="info-label">Nom:</span> ${formData.nom}
       </div>
-      <div style="font-size: 12px; font-weight: bold;">CURESS</div>
-      <div style="font-size: 11px; color: #666;">L'Espérance au Service du Peuple</div>
-    </div>
-
-    <div class="republic">
-      <div>RÉPUBLIQUE DE CÔTE D'IVOIRE</div>
-      <div>Union-Discipline-Travail</div>
-    </div>
-  </div>
-
-  <!-- Titre principal -->
-  <div class="main-title">
-    <div class="border-box">
-      <h1>ÉLECTION PRESIDENTIELLE</h1>
-      <div class="date">SCRUTIN DU 25 OCTOBRE 2025</div>
-    </div>
-  </div>
-
-  <!-- Sous-titre -->
-  <div class="subtitle">
-    <h2>MANDAT DU REPRÉSENTANT PRINCIPAL</h2>
-    <h2>DANS LE BUREAU DE VOTE</h2>
-  </div>
-
-  <!-- Corps du document -->
-  <div class="content">
-    <p>
-      Conformément aux dispositions des articles 35 nouveau et 38 du code électoral :
-    </p>
-
-    <p>
-      <strong>ALLASSANE OUATTARA</strong> candidat à l'élection présidentielle du 25 octobre 2025,
-    </p>
-
-    <p>
-      donne mandat à ${formData.fonction} <strong>${formData.prenom} ${formData.nom}</strong>
-    </p>
-
-    <p>
-      pour le représenter dans le Bureau de vote n°................................................
-    </p>
-
-    <p>
-      du Lieu de Vote................................................................................................
-    </p>
-
-    <p>
-      de la circonscription électorale d'<strong>${formData.circonscription}</strong>.
-    </p>
-
-    <p>
-      Le présent mandat lui est délivré en qualité de Représentant(e) Principal(e) pour servir les intérêts du Candidat <strong>${formData.prenom} ${formData.nom}</strong> et en valoir ce que de droit.
-    </p>
-  </div>
-
-  <!-- Date et signature -->
-  <div class="footer">
-    <div class="date-section">
-      Fait .................................................. le ${currentDate}
-    </div>
-
-    <div class="signature">
-      <div class="label">Le Candidat</div>
-      <div class="name">
-        Dr ${formData.prenom} ${formData.nom}
+      
+      <div class="info-item">
+        <span class="info-label">Prénom:</span> ${formData.prenom}
       </div>
+      
+      <div class="info-item">
+        <span class="info-label">Email:</span> ${formData.email}
+      </div>
+      
+      <div class="info-item">
+        <span class="info-label">Téléphone:</span> ${formData.telephone || 'Non spécifié'}
+      </div>
+      
+      <div class="info-item">
+        <span class="info-label">Fonction:</span> ${formData.fonction || 'Non spécifiée'}
+      </div>
+      
+      <div class="info-item">
+        <span class="info-label">Circonscription:</span> ${formData.circonscription || 'Non spécifiée'}
+      </div>
+      
+      <p style="margin-top: 20px;">
+        <a href="http://localhost:3000/ci-mandat-admin" class="button">
+          Voir la demande dans l'administration
+        </a>
+      </p>
     </div>
-  </div>
-
-  <!-- Référence -->
-  <div class="reference">
-    Référence: ${referenceNumber}
+    
+    <div class="footer">
+      <p>Ceci est une notification automatique du système de gestion des mandats.</p>
+      <p>Merci de ne pas répondre à cet email.</p>
+    </div>
   </div>
 </body>
 </html>
     `;
-  }
-
-  private async generatePdfFromHtml(html: string): Promise<Buffer> {
-    try {
-      const puppeteer = require('puppeteer');
-      
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
-      
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
-      
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '20mm',
-          right: '20mm',
-          bottom: '20mm',
-          left: '20mm'
-        }
-      });
-      
-      await browser.close();
-      
-      return pdfBuffer;
-    } catch (error) {
-      console.error('Erreur lors de la génération du PDF:', error);
-      throw new BadRequestException('Erreur lors de la génération du PDF');
-    }
   }
 }

@@ -205,7 +205,7 @@ Ne répondez pas à cet email.`
     }
   }
 
-  private createTransporter(config: EmailConfig): nodemailer.Transporter {
+  createTransporter(config: EmailConfig): nodemailer.Transporter {
     return nodemailer.createTransport({
       host: config.smtpHost,
       port: parseInt(config.smtpPort),
