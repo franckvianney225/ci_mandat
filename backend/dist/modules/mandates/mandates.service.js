@@ -207,8 +207,8 @@ let MandatesService = MandatesService_1 = class MandatesService {
     }
     async generatePDF(mandateId) {
         const mandate = await this.findOne(mandateId);
-        if (!mandate.isApproved()) {
-            throw new common_1.BadRequestException('Seuls les mandats approuvés peuvent générer un PDF');
+        if (mandate.status !== mandate_entity_1.MandateStatus.ADMIN_APPROVED && mandate.status !== mandate_entity_1.MandateStatus.SUPER_ADMIN_APPROVED) {
+            throw new common_1.BadRequestException('Seuls les mandats validés peuvent générer un PDF');
         }
         mandate.pdfGenerated = true;
         mandate.pdfGeneratedAt = new Date();

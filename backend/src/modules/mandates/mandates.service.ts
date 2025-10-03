@@ -282,8 +282,9 @@ export class MandatesService {
   async generatePDF(mandateId: string): Promise<{ pdfBuffer: Buffer; fileName: string }> {
     const mandate = await this.findOne(mandateId);
     
-    if (!mandate.isApproved()) {
-      throw new BadRequestException('Seuls les mandats approuvés peuvent générer un PDF');
+    // Permettre la génération de PDF pour les mandats validés par admin ou super admin
+    if (mandate.status !== MandateStatus.ADMIN_APPROVED && mandate.status !== MandateStatus.SUPER_ADMIN_APPROVED) {
+      throw new BadRequestException('Seuls les mandats validés peuvent générer un PDF');
     }
 
     // Mettre à jour le mandat avec les informations du PDF
