@@ -21,12 +21,14 @@ const mandate_entity_1 = require("../../entities/mandate.entity");
 const user_entity_1 = require("../../entities/user.entity");
 const settings_service_1 = require("../settings/settings.service");
 const email_service_1 = require("../email/email.service");
+const pdf_service_1 = require("../pdf/pdf.service");
 let MandatesService = MandatesService_1 = class MandatesService {
-    constructor(mandatesRepository, usersRepository, settingsService, emailService) {
+    constructor(mandatesRepository, usersRepository, settingsService, emailService, pdfService) {
         this.mandatesRepository = mandatesRepository;
         this.usersRepository = usersRepository;
         this.settingsService = settingsService;
         this.emailService = emailService;
+        this.pdfService = pdfService;
         this.logger = new common_1.Logger(MandatesService_1.name);
     }
     async findAll(filters = {}) {
@@ -206,17 +208,23 @@ let MandatesService = MandatesService_1 = class MandatesService {
         });
     }
     async generatePDF(mandateId) {
-        const mandate = await this.findOne(mandateId);
-        if (mandate.status !== mandate_entity_1.MandateStatus.ADMIN_APPROVED && mandate.status !== mandate_entity_1.MandateStatus.SUPER_ADMIN_APPROVED) {
-            throw new common_1.BadRequestException('Seuls les mandats validés peuvent générer un PDF');
+        try {
+            this.logger.log(`Début de la génération du PDF pour le mandat: ${mandateId}`);
+            const mandate = await this.findOne(mandateId);
+            if (mandate.status !== mandate_entity_1.MandateStatus.ADMIN_APPROVED && mandate.status !== mandate_entity_1.MandateStatus.SUPER_ADMIN_APPROVED) {
+                throw new common_1.BadRequestException('Seuls les mandats validés peuvent générer un PDF');
+            }
+            const { pdfBuffer, fileName } = await this.pdfService.generateMandatePDF(mandate);
+            mandate.pdfGenerated = true;
+            mandate.pdfGeneratedAt = new Date();
+            mandate.pdfUrl = `/api/v1/mandates/${mandateId}/pdf`;
+            await this.mandatesRepository.save(mandate);
+            return { pdfBuffer, fileName };
         }
-        mandate.pdfGenerated = true;
-        mandate.pdfGeneratedAt = new Date();
-        mandate.pdfUrl = `/api/v1/mandates/${mandateId}/pdf`;
-        await this.mandatesRepository.save(mandate);
-        const fileName = `mandat_${mandate.referenceNumber}_${Date.now()}.pdf`;
-        const pdfBuffer = Buffer.from('PDF généré côté frontend');
-        return { pdfBuffer, fileName };
+        catch (error) {
+            this.logger.error(`Erreur lors de la génération du PDF pour le mandat ${mandateId}:`, error);
+            throw error;
+        }
     }
     async sendSubmissionConfirmationEmail(mandate) {
         try {
@@ -234,7 +242,11 @@ let MandatesService = MandatesService_1 = class MandatesService {
     }
     async sendMandateApprovedEmail(mandate) {
         try {
+            this.logger.log(`Début de l'envoi de l'email de validation pour le mandat: ${mandate.id}`);
+            this.logger.log(`Génération du PDF pour le mandat: ${mandate.id}`);
             const { pdfBuffer, fileName } = await this.generatePDF(mandate.id);
+            this.logger.log(`PDF généré avec succès: ${fileName}, taille: ${pdfBuffer.length} bytes`);
+            this.logger.log(`Envoi de l'email à: ${mandate.formData.email}`);
             const emailSent = await this.emailService.sendEmail(email_service_1.EmailType.MANDATE_APPROVED, mandate.formData.email, {
                 mandate,
                 attachments: [
@@ -301,6 +313,7 @@ exports.MandatesService = MandatesService = MandatesService_1 = __decorate([
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         settings_service_1.SettingsService,
-        email_service_1.EmailService])
+        email_service_1.EmailService,
+        pdf_service_1.PdfService])
 ], MandatesService);
 //# sourceMappingURL=mandates.service.js.map

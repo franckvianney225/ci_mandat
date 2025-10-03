@@ -3,6 +3,7 @@ import { Mandate, MandateStatus } from '../../entities/mandate.entity';
 import { User } from '../../entities/user.entity';
 import { SettingsService } from '../settings/settings.service';
 import { EmailService } from '../email/email.service';
+import { PdfService } from '../pdf/pdf.service';
 interface CreateMandateDto {
     nom: string;
     prenom: string;
@@ -28,8 +29,9 @@ export declare class MandatesService {
     private usersRepository;
     private settingsService;
     private emailService;
+    private pdfService;
     private readonly logger;
-    constructor(mandatesRepository: Repository<Mandate>, usersRepository: Repository<User>, settingsService: SettingsService, emailService: EmailService);
+    constructor(mandatesRepository: Repository<Mandate>, usersRepository: Repository<User>, settingsService: SettingsService, emailService: EmailService, pdfService: PdfService);
     findAll(filters?: MandateFilters): Promise<{
         data: Mandate[];
         total: number;

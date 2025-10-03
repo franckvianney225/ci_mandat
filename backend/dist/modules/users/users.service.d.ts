@@ -34,8 +34,8 @@ export declare class UsersService {
     constructor(usersRepository: Repository<User>);
     createDefaultAdmin(): Promise<void>;
     findAll(filters?: UserFilters): Promise<{
-        data: any;
-        total: any;
+        data: User[];
+        total: number;
         page: number;
         limit: number;
         totalPages: number;
@@ -48,15 +48,15 @@ export declare class UsersService {
     activateUser(id: string): Promise<User>;
     suspendUser(id: string): Promise<User>;
     getStatistics(): Promise<{
-        total: any;
+        total: number;
         byStatus: {
-            active: any;
-            pending: any;
-            suspended: any;
+            active: number;
+            pending: number;
+            suspended: number;
         };
         byRole: {
-            admin: any;
-            superAdmin: any;
+            admin: number;
+            superAdmin: number;
         };
     }>;
     resetPassword(id: string, newPassword: string): Promise<void>;

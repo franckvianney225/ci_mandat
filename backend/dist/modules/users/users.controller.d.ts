@@ -32,22 +32,22 @@ export declare class UsersController {
     private readonly usersService;
     constructor(usersService: UsersService);
     findAll(filters: UserFiltersDto): Promise<{
-        data: any;
-        total: any;
+        data: import("../../entities/user.entity").User[];
+        total: number;
         page: number;
         limit: number;
         totalPages: number;
     }>;
     getStatistics(): Promise<{
-        total: any;
+        total: number;
         byStatus: {
-            active: any;
-            pending: any;
-            suspended: any;
+            active: number;
+            pending: number;
+            suspended: number;
         };
         byRole: {
-            admin: any;
-            superAdmin: any;
+            admin: number;
+            superAdmin: number;
         };
     }>;
     findOne(id: string): Promise<import("../../entities/user.entity").User>;
