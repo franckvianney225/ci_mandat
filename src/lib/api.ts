@@ -310,6 +310,25 @@ class ApiClient {
     });
   }
 
+  async sendTestEmail(config: {
+    smtpHost: string;
+    smtpPort: string;
+    smtpUsername: string;
+    smtpPassword: string;
+    fromEmail: string;
+    fromName: string;
+    useSSL: boolean;
+    useTLS: boolean;
+  }, testEmail: string): Promise<ApiResponse> {
+    return this.request('/settings/email/send-test', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...config,
+        testEmail
+      }),
+    });
+  }
+
   // Mandates API
   async createMandate(mandateData: CreateMandateDto): Promise<ApiResponse<Mandate>> {
     return this.request('/mandates', {

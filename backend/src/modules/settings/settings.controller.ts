@@ -67,4 +67,23 @@ export class SettingsController {
       };
     }
   }
+
+  @Post('email/send-test')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  async sendTestEmail(@Body() body: EmailConfig & { testEmail: string }): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      const { testEmail, ...config } = body;
+      await this.settingsService.sendTestEmail(config, testEmail);
+      return {
+        success: true,
+        message: `Email de test envoyé avec succès à ${testEmail} !`
+      };
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi de l\'email de test:', error);
+      return {
+        success: false,
+        error: error.message || 'Échec de l\'envoi de l\'email de test. Vérifiez vos paramètres.'
+      };
+    }
+  }
 }

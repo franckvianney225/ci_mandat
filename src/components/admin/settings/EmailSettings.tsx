@@ -32,6 +32,9 @@ export default function EmailSettings() {
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [testEmail, setTestEmail] = useState("");
+  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [sendTestResult, setSendTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // Charger la configuration existante au montage du composant
   useEffect(() => {
@@ -117,6 +120,44 @@ export default function EmailSettings() {
       });
     } finally {
       setIsTesting(false);
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    if (!testEmail.trim()) {
+      setSendTestResult({
+        success: false,
+        message: 'Veuillez entrer une adresse email pour le test'
+      });
+      return;
+    }
+
+    setIsSendingTest(true);
+    setSendTestResult(null);
+    setSaveMessage(null);
+    
+    try {
+      const response = await apiClient.sendTestEmail(config, testEmail);
+      
+      if (response.success) {
+        setSendTestResult({
+          success: true,
+          message: response.message || `Email de test envoyé avec succès à ${testEmail} !`
+        });
+      } else {
+        setSendTestResult({
+          success: false,
+          message: response.error || 'Échec de l\'envoi de l\'email de test. Vérifiez vos paramètres.'
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi du test email:', error);
+      setSendTestResult({
+        success: false,
+        message: 'Erreur lors de l\'envoi de l\'email de test'
+      });
+    } finally {
+      setIsSendingTest(false);
     }
   };
 
@@ -285,6 +326,67 @@ export default function EmailSettings() {
             </div>
           </div>
         )}
+
+        {/* Test d'envoi d'email */}
+        <div className="space-y-4 pt-6 border-t border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">Test d'envoi d'email</h3>
+          <p className="text-sm text-gray-600">
+            Testez l'envoi d'un email réel avec la configuration actuelle
+          </p>
+          
+          <div className="flex items-end space-x-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email de test</label>
+              <input
+                type="email"
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] text-gray-900 bg-white"
+                placeholder="test@example.com"
+              />
+            </div>
+            
+            <button
+              onClick={handleSendTestEmail}
+              disabled={isSendingTest || isSaving || isTesting}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            >
+              {isSendingTest ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Envoi...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                  Envoyer un test
+                </>
+              )}
+            </button>
+          </div>
+
+          {sendTestResult && (
+            <div className={`p-4 rounded-lg border ${sendTestResult.success ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
+              <div className="flex items-center">
+                {sendTestResult.success ? (
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {sendTestResult.message}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Actions */}
         <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
