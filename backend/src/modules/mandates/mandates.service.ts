@@ -5,6 +5,7 @@ import { Repository, FindOptionsWhere, Like } from 'typeorm';
 import { Mandate, MandateStatus } from '../../entities/mandate.entity';
 import { User } from '../../entities/user.entity';
 import { SettingsService } from '../settings/settings.service';
+import { EmailService, EmailType } from '../email/email.service';
 
 interface CreateMandateDto {
   nom: string;
@@ -39,6 +40,7 @@ export class MandatesService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private settingsService: SettingsService,
+    private emailService: EmailService,
   ) {}
 
   async findAll(filters: MandateFilters = {}) {
@@ -128,6 +130,9 @@ export class MandatesService {
     
     const savedMandate = await this.mandatesRepository.save(mandate);
     
+    // Envoyer l'email de confirmation au demandeur
+    await this.sendSubmissionConfirmationEmail(savedMandate);
+    
     // Envoyer les notifications aux administrateurs
     await this.sendAdminNotifications(savedMandate);
     
@@ -202,7 +207,12 @@ export class MandatesService {
     mandate.superAdminApprovedAt = new Date();
     mandate.superAdminApproverId = superAdminId;
 
-    return await this.mandatesRepository.save(mandate);
+    const savedMandate = await this.mandatesRepository.save(mandate);
+    
+    // Envoyer l'email de validation au demandeur
+    await this.sendMandateApprovedEmail(savedMandate);
+    
+    return savedMandate;
   }
 
   async reject(id: string, reason: string, adminId?: string): Promise<Mandate> {
@@ -220,7 +230,12 @@ export class MandatesService {
       mandate.adminApproverId = adminId;
     }
 
-    return await this.mandatesRepository.save(mandate);
+    const savedMandate = await this.mandatesRepository.save(mandate);
+    
+    // Envoyer l'email de rejet au demandeur
+    await this.sendMandateRejectedEmail(savedMandate);
+    
+    return savedMandate;
   }
 
   async getStatistics() {
@@ -276,6 +291,72 @@ export class MandatesService {
     return { pdfBuffer, fileName };
   }
 
+  /**
+   * Envoie l'email de confirmation de soumission au demandeur
+   */
+  private async sendSubmissionConfirmationEmail(mandate: Mandate): Promise<void> {
+    try {
+      const emailSent = await this.emailService.sendEmail(
+        EmailType.SUBMISSION_CONFIRMATION,
+        mandate.formData.email,
+        { mandate }
+      );
+      
+      if (emailSent) {
+        this.logger.log(`Email de confirmation envoyé au demandeur: ${mandate.formData.email}`);
+      } else {
+        this.logger.warn(`Échec de l'envoi de l'email de confirmation à: ${mandate.formData.email}`);
+      }
+    } catch (error) {
+      this.logger.error(`Erreur lors de l'envoi de l'email de confirmation à ${mandate.formData.email}:`, error);
+      // Ne pas bloquer la création du mandat en cas d'erreur d'envoi d'email
+    }
+  }
+
+  /**
+   * Envoie l'email de validation au demandeur
+   */
+  private async sendMandateApprovedEmail(mandate: Mandate): Promise<void> {
+    try {
+      const emailSent = await this.emailService.sendEmail(
+        EmailType.MANDATE_APPROVED,
+        mandate.formData.email,
+        { mandate }
+      );
+      
+      if (emailSent) {
+        this.logger.log(`Email de validation envoyé au demandeur: ${mandate.formData.email}`);
+      } else {
+        this.logger.warn(`Échec de l'envoi de l'email de validation à: ${mandate.formData.email}`);
+      }
+    } catch (error) {
+      this.logger.error(`Erreur lors de l'envoi de l'email de validation à ${mandate.formData.email}:`, error);
+      // Ne pas bloquer la validation du mandat en cas d'erreur d'envoi d'email
+    }
+  }
+
+  /**
+   * Envoie l'email de rejet au demandeur
+   */
+  private async sendMandateRejectedEmail(mandate: Mandate): Promise<void> {
+    try {
+      const emailSent = await this.emailService.sendEmail(
+        EmailType.MANDATE_REJECTED,
+        mandate.formData.email,
+        { mandate }
+      );
+      
+      if (emailSent) {
+        this.logger.log(`Email de rejet envoyé au demandeur: ${mandate.formData.email}`);
+      } else {
+        this.logger.warn(`Échec de l'envoi de l'email de rejet à: ${mandate.formData.email}`);
+      }
+    } catch (error) {
+      this.logger.error(`Erreur lors de l'envoi de l'email de rejet à ${mandate.formData.email}:`, error);
+      // Ne pas bloquer le rejet du mandat en cas d'erreur d'envoi d'email
+    }
+  }
+
   private async sendAdminNotifications(mandate: Mandate): Promise<void> {
     try {
       // Récupérer tous les administrateurs
@@ -291,28 +372,13 @@ export class MandatesService {
         return;
       }
 
-      // Récupérer la configuration email
-      const emailConfig = await this.settingsService.getEmailConfig();
-      
-      if (!emailConfig || !emailConfig.smtpHost || !emailConfig.smtpPort || !emailConfig.smtpUsername || !emailConfig.smtpPassword) {
-        this.logger.warn('Configuration SMTP non disponible pour l\'envoi de notifications');
-        return;
-      }
-
-      const transporter = this.settingsService.createTransporter(emailConfig);
-
-      // Préparer le contenu de l'email
-      const subject = 'Nouvelle demande de mandat reçue';
-      const htmlContent = this.generateNotificationEmail(mandate);
-
-      // Envoyer l'email à tous les administrateurs
+      // Envoyer l'email de notification à tous les administrateurs
       const emailPromises = admins.map(admin => {
-        return transporter.sendMail({
-          from: emailConfig.fromEmail || emailConfig.smtpUsername,
-          to: admin.email,
-          subject: subject,
-          html: htmlContent,
-        });
+        return this.emailService.sendEmail(
+          EmailType.ADMIN_NOTIFICATION,
+          admin.email,
+          { mandate }
+        );
       });
 
       await Promise.all(emailPromises);
@@ -325,127 +391,5 @@ export class MandatesService {
     }
   }
 
-  private generateNotificationEmail(mandate: Mandate): string {
-    const { formData, createdAt } = mandate;
-    const formattedDate = new Date(createdAt).toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Nouvelle demande de mandat</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background: #f9f9f9;
-      padding: 20px;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-    }
-    .header {
-      background: #1E40AF;
-      color: white;
-      padding: 20px;
-      text-align: center;
-      border-radius: 8px 8px 0 0;
-      margin: -20px -20px 20px -20px;
-    }
-    .content {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-    .info-item {
-      margin-bottom: 10px;
-      padding: 10px;
-      background: #f8f9fa;
-      border-left: 4px solid #1E40AF;
-    }
-    .info-label {
-      font-weight: bold;
-      color: #1E40AF;
-    }
-    .footer {
-      text-align: center;
-      color: #666;
-      font-size: 12px;
-      margin-top: 20px;
-    }
-    .button {
-      display: inline-block;
-      background: #1E40AF;
-      color: white;
-      padding: 12px 24px;
-      text-decoration: none;
-      border-radius: 4px;
-      margin-top: 20px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Nouvelle Demande de Mandat</h1>
-      <p>Une nouvelle demande a été soumise le ${formattedDate}</p>
-    </div>
-    
-    <div class="content">
-      <h2>Informations du demandeur</h2>
-      
-      <div class="info-item">
-        <span class="info-label">Nom:</span> ${formData.nom}
-      </div>
-      
-      <div class="info-item">
-        <span class="info-label">Prénom:</span> ${formData.prenom}
-      </div>
-      
-      <div class="info-item">
-        <span class="info-label">Email:</span> ${formData.email}
-      </div>
-      
-      <div class="info-item">
-        <span class="info-label">Téléphone:</span> ${formData.telephone || 'Non spécifié'}
-      </div>
-      
-      <div class="info-item">
-        <span class="info-label">Fonction:</span> ${formData.fonction || 'Non spécifiée'}
-      </div>
-      
-      <div class="info-item">
-        <span class="info-label">Circonscription:</span> ${formData.circonscription || 'Non spécifiée'}
-      </div>
-      
-      <p style="margin-top: 20px;">
-        <a href="http://localhost:3000/ci-mandat-admin" class="button">
-          Voir la demande dans l'administration
-        </a>
-      </p>
-    </div>
-    
-    <div class="footer">
-      <p>Ceci est une notification automatique du système de gestion des mandats.</p>
-      <p>Merci de ne pas répondre à cet email.</p>
-    </div>
-  </div>
-</body>
-</html>
-    `;
-  }
+  // La méthode generateNotificationEmail a été déplacée dans EmailService
 }

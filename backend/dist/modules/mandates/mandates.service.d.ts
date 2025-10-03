@@ -2,6 +2,7 @@ import { Repository } from 'typeorm';
 import { Mandate, MandateStatus } from '../../entities/mandate.entity';
 import { User } from '../../entities/user.entity';
 import { SettingsService } from '../settings/settings.service';
+import { EmailService } from '../email/email.service';
 interface CreateMandateDto {
     nom: string;
     prenom: string;
@@ -26,8 +27,9 @@ export declare class MandatesService {
     private mandatesRepository;
     private usersRepository;
     private settingsService;
+    private emailService;
     private readonly logger;
-    constructor(mandatesRepository: Repository<Mandate>, usersRepository: Repository<User>, settingsService: SettingsService);
+    constructor(mandatesRepository: Repository<Mandate>, usersRepository: Repository<User>, settingsService: SettingsService, emailService: EmailService);
     findAll(filters?: MandateFilters): Promise<{
         data: Mandate[];
         total: number;
@@ -53,7 +55,9 @@ export declare class MandatesService {
         pdfBuffer: Buffer;
         fileName: string;
     }>;
+    private sendSubmissionConfirmationEmail;
+    private sendMandateApprovedEmail;
+    private sendMandateRejectedEmail;
     private sendAdminNotifications;
-    private generateNotificationEmail;
 }
 export {};

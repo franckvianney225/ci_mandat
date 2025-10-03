@@ -14,6 +14,7 @@ const mandates_controller_1 = require("./mandates.controller");
 const mandate_entity_1 = require("../../entities/mandate.entity");
 const user_entity_1 = require("../../entities/user.entity");
 const settings_module_1 = require("../settings/settings.module");
+const email_module_1 = require("../email/email.module");
 let MandatesModule = class MandatesModule {
 };
 exports.MandatesModule = MandatesModule;
@@ -22,6 +23,7 @@ exports.MandatesModule = MandatesModule = __decorate([
         imports: [
             typeorm_1.TypeOrmModule.forFeature([mandate_entity_1.Mandate, user_entity_1.User]),
             settings_module_1.SettingsModule,
+            email_module_1.EmailModule,
         ],
         controllers: [mandates_controller_1.MandatesController],
         providers: [mandates_service_1.MandatesService],

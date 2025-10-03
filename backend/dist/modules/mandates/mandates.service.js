@@ -20,11 +20,13 @@ const typeorm_2 = require("typeorm");
 const mandate_entity_1 = require("../../entities/mandate.entity");
 const user_entity_1 = require("../../entities/user.entity");
 const settings_service_1 = require("../settings/settings.service");
+const email_service_1 = require("../email/email.service");
 let MandatesService = MandatesService_1 = class MandatesService {
-    constructor(mandatesRepository, usersRepository, settingsService) {
+    constructor(mandatesRepository, usersRepository, settingsService, emailService) {
         this.mandatesRepository = mandatesRepository;
         this.usersRepository = usersRepository;
         this.settingsService = settingsService;
+        this.emailService = emailService;
         this.logger = new common_1.Logger(MandatesService_1.name);
     }
     async findAll(filters = {}) {
@@ -92,6 +94,7 @@ let MandatesService = MandatesService_1 = class MandatesService {
         mandate.formData = createMandateDto;
         mandate.status = mandate_entity_1.MandateStatus.PENDING_VALIDATION;
         const savedMandate = await this.mandatesRepository.save(mandate);
+        await this.sendSubmissionConfirmationEmail(savedMandate);
         await this.sendAdminNotifications(savedMandate);
         return savedMandate;
     }
@@ -150,7 +153,9 @@ let MandatesService = MandatesService_1 = class MandatesService {
         mandate.status = mandate_entity_1.MandateStatus.SUPER_ADMIN_APPROVED;
         mandate.superAdminApprovedAt = new Date();
         mandate.superAdminApproverId = superAdminId;
-        return await this.mandatesRepository.save(mandate);
+        const savedMandate = await this.mandatesRepository.save(mandate);
+        await this.sendMandateApprovedEmail(savedMandate);
+        return savedMandate;
     }
     async reject(id, reason, adminId) {
         const mandate = await this.findOne(id);
@@ -163,7 +168,9 @@ let MandatesService = MandatesService_1 = class MandatesService {
         if (adminId) {
             mandate.adminApproverId = adminId;
         }
-        return await this.mandatesRepository.save(mandate);
+        const savedMandate = await this.mandatesRepository.save(mandate);
+        await this.sendMandateRejectedEmail(savedMandate);
+        return savedMandate;
     }
     async getStatistics() {
         const totalMandates = await this.mandatesRepository.count();
@@ -207,6 +214,48 @@ let MandatesService = MandatesService_1 = class MandatesService {
         const pdfBuffer = Buffer.from('PDF généré côté frontend');
         return { pdfBuffer, fileName };
     }
+    async sendSubmissionConfirmationEmail(mandate) {
+        try {
+            const emailSent = await this.emailService.sendEmail(email_service_1.EmailType.SUBMISSION_CONFIRMATION, mandate.formData.email, { mandate });
+            if (emailSent) {
+                this.logger.log(`Email de confirmation envoyé au demandeur: ${mandate.formData.email}`);
+            }
+            else {
+                this.logger.warn(`Échec de l'envoi de l'email de confirmation à: ${mandate.formData.email}`);
+            }
+        }
+        catch (error) {
+            this.logger.error(`Erreur lors de l'envoi de l'email de confirmation à ${mandate.formData.email}:`, error);
+        }
+    }
+    async sendMandateApprovedEmail(mandate) {
+        try {
+            const emailSent = await this.emailService.sendEmail(email_service_1.EmailType.MANDATE_APPROVED, mandate.formData.email, { mandate });
+            if (emailSent) {
+                this.logger.log(`Email de validation envoyé au demandeur: ${mandate.formData.email}`);
+            }
+            else {
+                this.logger.warn(`Échec de l'envoi de l'email de validation à: ${mandate.formData.email}`);
+            }
+        }
+        catch (error) {
+            this.logger.error(`Erreur lors de l'envoi de l'email de validation à ${mandate.formData.email}:`, error);
+        }
+    }
+    async sendMandateRejectedEmail(mandate) {
+        try {
+            const emailSent = await this.emailService.sendEmail(email_service_1.EmailType.MANDATE_REJECTED, mandate.formData.email, { mandate });
+            if (emailSent) {
+                this.logger.log(`Email de rejet envoyé au demandeur: ${mandate.formData.email}`);
+            }
+            else {
+                this.logger.warn(`Échec de l'envoi de l'email de rejet à: ${mandate.formData.email}`);
+            }
+        }
+        catch (error) {
+            this.logger.error(`Erreur lors de l'envoi de l'email de rejet à ${mandate.formData.email}:`, error);
+        }
+    }
     async sendAdminNotifications(mandate) {
         try {
             const admins = await this.usersRepository.find({
@@ -219,21 +268,8 @@ let MandatesService = MandatesService_1 = class MandatesService {
                 this.logger.warn('Aucun administrateur trouvé pour envoyer les notifications');
                 return;
             }
-            const emailConfig = await this.settingsService.getEmailConfig();
-            if (!emailConfig || !emailConfig.smtpHost || !emailConfig.smtpPort || !emailConfig.smtpUsername || !emailConfig.smtpPassword) {
-                this.logger.warn('Configuration SMTP non disponible pour l\'envoi de notifications');
-                return;
-            }
-            const transporter = this.settingsService.createTransporter(emailConfig);
-            const subject = 'Nouvelle demande de mandat reçue';
-            const htmlContent = this.generateNotificationEmail(mandate);
             const emailPromises = admins.map(admin => {
-                return transporter.sendMail({
-                    from: emailConfig.fromEmail || emailConfig.smtpUsername,
-                    to: admin.email,
-                    subject: subject,
-                    html: htmlContent,
-                });
+                return this.emailService.sendEmail(email_service_1.EmailType.ADMIN_NOTIFICATION, admin.email, { mandate });
             });
             await Promise.all(emailPromises);
             this.logger.log(`Notifications envoyées à ${admins.length} administrateur(s)`);
@@ -241,128 +277,6 @@ let MandatesService = MandatesService_1 = class MandatesService {
         catch (error) {
             this.logger.error('Erreur lors de l\'envoi des notifications aux administrateurs:', error);
         }
-    }
-    generateNotificationEmail(mandate) {
-        const { formData, createdAt } = mandate;
-        const formattedDate = new Date(createdAt).toLocaleDateString('fr-FR', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Nouvelle demande de mandat</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background: #f9f9f9;
-      padding: 20px;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-    }
-    .header {
-      background: #1E40AF;
-      color: white;
-      padding: 20px;
-      text-align: center;
-      border-radius: 8px 8px 0 0;
-      margin: -20px -20px 20px -20px;
-    }
-    .content {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-    .info-item {
-      margin-bottom: 10px;
-      padding: 10px;
-      background: #f8f9fa;
-      border-left: 4px solid #1E40AF;
-    }
-    .info-label {
-      font-weight: bold;
-      color: #1E40AF;
-    }
-    .footer {
-      text-align: center;
-      color: #666;
-      font-size: 12px;
-      margin-top: 20px;
-    }
-    .button {
-      display: inline-block;
-      background: #1E40AF;
-      color: white;
-      padding: 12px 24px;
-      text-decoration: none;
-      border-radius: 4px;
-      margin-top: 20px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Nouvelle Demande de Mandat</h1>
-      <p>Une nouvelle demande a été soumise le ${formattedDate}</p>
-    </div>
-    
-    <div class="content">
-      <h2>Informations du demandeur</h2>
-      
-      <div class="info-item">
-        <span class="info-label">Nom:</span> ${formData.nom}
-      </div>
-      
-      <div class="info-item">
-        <span class="info-label">Prénom:</span> ${formData.prenom}
-      </div>
-      
-      <div class="info-item">
-        <span class="info-label">Email:</span> ${formData.email}
-      </div>
-      
-      <div class="info-item">
-        <span class="info-label">Téléphone:</span> ${formData.telephone || 'Non spécifié'}
-      </div>
-      
-      <div class="info-item">
-        <span class="info-label">Fonction:</span> ${formData.fonction || 'Non spécifiée'}
-      </div>
-      
-      <div class="info-item">
-        <span class="info-label">Circonscription:</span> ${formData.circonscription || 'Non spécifiée'}
-      </div>
-      
-      <p style="margin-top: 20px;">
-        <a href="http://localhost:3000/ci-mandat-admin" class="button">
-          Voir la demande dans l'administration
-        </a>
-      </p>
-    </div>
-    
-    <div class="footer">
-      <p>Ceci est une notification automatique du système de gestion des mandats.</p>
-      <p>Merci de ne pas répondre à cet email.</p>
-    </div>
-  </div>
-</body>
-</html>
-    `;
     }
 };
 exports.MandatesService = MandatesService;
@@ -372,6 +286,7 @@ exports.MandatesService = MandatesService = MandatesService_1 = __decorate([
     __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
-        settings_service_1.SettingsService])
+        settings_service_1.SettingsService,
+        email_service_1.EmailService])
 ], MandatesService);
 //# sourceMappingURL=mandates.service.js.map

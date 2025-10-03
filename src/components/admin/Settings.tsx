@@ -36,7 +36,7 @@ export default function Settings() {
   return (
     <div className="space-y-6">
       {/* En-tête */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      {/* <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
@@ -46,7 +46,7 @@ export default function Settings() {
             Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')}
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Navigation latérale */}
