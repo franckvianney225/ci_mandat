@@ -6,6 +6,20 @@ import ValidateConfirm from "./ValidateConfirm";
 import RejectConfirm from "./RejectConfirm";
 import { apiClient } from "@/lib/api";
 
+interface User {
+  id: string;
+  email: string;
+  role: "admin" | "super_admin";
+  personalData: {
+    firstName: string;
+    lastName: string;
+  };
+}
+
+interface RequestsManagementProps {
+  currentUser?: User | null;
+}
+
 interface Request {
   id: string;
   nom: string;
@@ -47,7 +61,7 @@ const mapBackendStatusToFrontend = (backendStatus: string): "pending" | "validat
   }
 };
 
-export default function RequestsManagement() {
+export default function RequestsManagement({ currentUser }: RequestsManagementProps) {
   const [allRequests, setAllRequests] = useState<Request[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -376,8 +390,29 @@ export default function RequestsManagement() {
                 </div>
               </div>
             </div>
+
+           
           </div>
         </div>
+      </div>
+
+      {/* Section bouton Nouvelle demande - entre les filtres et le tableau */}
+      <div className="flex justify-end">
+        {/* Bouton Nouvelle demande - visible uniquement pour super_admin */}
+        {currentUser?.role === "super_admin" && (
+          <button
+            onClick={() => {
+              // TODO: Implémenter la logique pour créer une nouvelle demande
+              console.log("Créer une nouvelle demande");
+            }}
+            className="inline-flex items-center px-4 py-3 border border-transparent text-sm font-semibold rounded-lg text-white bg-[#FF8200] hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF8200] transition-all duration-200 transform hover:scale-105 shadow-md"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Nouvelle demande
+          </button>
+        )}
       </div>
 
       {/* Tableau des demandes */}
@@ -408,7 +443,7 @@ export default function RequestsManagement() {
             </button>
           </div>
           
-          {/* Compteur à droite */}
+          {/* Compteur */}
           <div className="text-sm text-gray-600">
             {filteredRequests.length} {filteredRequests.length === 1 ? 'demande' : 'demandes'}
           </div>

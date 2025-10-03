@@ -69,7 +69,7 @@ export default function AdminDashboard() {
       case "dashboard":
         return <Dashboard onSectionChange={setActiveSection} />;
       case "requests":
-        return <RequestsManagement />;
+        return <RequestsManagement currentUser={currentUser} />;
       case "users":
         return <UsersManagement />;
       case "settings":
