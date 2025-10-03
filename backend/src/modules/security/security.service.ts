@@ -103,7 +103,7 @@ export class SecurityService {
       if (!mandate) {
         return {
           isValid: false,
-          message: 'Mandat non trouvé'
+          message: 'Mandat non trouvé dans le systeme - Ce mandat pourrait être falsifié'
         };
       }
 
@@ -124,7 +124,14 @@ export class SecurityService {
       
       const isRejected = mandate.status === 'rejected';
       
-      if (isRejected || !isApproved) {
+      if (isRejected) {
+        return {
+          isValid: false,
+          message: 'Mandat rejeté'
+        };
+      }
+      
+      if (!isApproved) {
         return {
           isValid: false,
           message: 'Mandat non approuvé'

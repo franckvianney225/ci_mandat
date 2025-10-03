@@ -156,8 +156,8 @@ export default function VerificationPage() {
                   result.mandate.status === 'admin_approved' ? 'text-green-600' :
                   result.mandate.status === 'pending_validation' ? 'text-yellow-600' : 'text-red-600'
                 }`}>
-                  {result.mandate.status === 'super_admin_approved' ? 'Validé définitivement' :
-                   result.mandate.status === 'admin_approved' ? 'Validé par admin' :
+                  {result.mandate.status === 'super_admin_approved' ? 'Validé' :
+                   result.mandate.status === 'admin_approved' ? 'Validé' :
                    result.mandate.status === 'pending_validation' ? 'En attente' :
                    result.mandate.status === 'rejected' ? 'Rejeté' : result.mandate.status}
                 </span>
