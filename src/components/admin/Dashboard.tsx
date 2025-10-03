@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { apiClient } from "@/lib/api";
 
 interface DashboardStats {
   totalRequests: number;
@@ -21,7 +23,37 @@ interface RecentRequest {
   department: string;
 }
 
+interface MandateData {
+  id: string;
+  formData: {
+    nom: string;
+    prenom: string;
+    email: string;
+    telephone: string;
+    circonscription: string;
+  };
+  status: string;
+  createdAt: string;
+  referenceNumber: string;
+}
+
+// Fonction pour convertir les statuts backend en statuts frontend
+const mapBackendStatusToFrontend = (backendStatus: string): "pending" | "validated" | "rejected" => {
+  switch (backendStatus) {
+    case "pending_validation":
+      return "pending";
+    case "admin_approved":
+    case "super_admin_approved":
+      return "validated";
+    case "rejected":
+      return "rejected";
+    default:
+      return "pending";
+  }
+};
+
 export default function Dashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats>({
     totalRequests: 0,
     validatedRequests: 0,
@@ -33,75 +65,58 @@ export default function Dashboard() {
   const [recentRequests, setRecentRequests] = useState<RecentRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Données mockées pour le développement
-  const mockStats: DashboardStats = {
-    totalRequests: 245,
-    validatedRequests: 189,
-    pendingRequests: 42,
-    rejectedRequests: 14,
-    totalUsers: 28,
-    activeUsers: 22
+  const handleViewAllRequests = () => {
+    router.push('/ci-mandat-admin?tab=requests');
   };
 
-  const mockRecentRequests: RecentRequest[] = [
-    {
-      id: "1",
-      clientName: "Jean KOUADIO",
-      email: "jean.kouadio@entreprise.ci",
-      status: "pending",
-      statusText: "En attente",
-      createdAt: "2025-10-02T09:30:00Z",
-      department: "Direction Générale"
-    },
-    {
-      id: "2",
-      clientName: "Marie TRAORE",
-      email: "marie.traore@entreprise.ci",
-      status: "validated",
-      statusText: "Validé",
-      createdAt: "2025-10-02T08:15:00Z",
-      department: "Ressources Humaines"
-    },
-    {
-      id: "3",
-      clientName: "Pierre YEO",
-      email: "pierre.yeo@entreprise.ci",
-      status: "validated",
-      statusText: "Validé",
-      createdAt: "2025-10-01T16:45:00Z",
-      department: "Finance"
-    },
-    {
-      id: "4",
-      clientName: "Sophie DIALLO",
-      email: "sophie.diallo@entreprise.ci",
-      status: "rejected",
-      statusText: "Rejeté",
-      createdAt: "2025-10-01T14:20:00Z",
-      department: "Informatique"
-    },
-    {
-      id: "5",
-      clientName: "David BAMBA",
-      email: "david.bamba@entreprise.ci",
-      status: "pending",
-      statusText: "En attente",
-      createdAt: "2025-10-01T11:10:00Z",
-      department: "Marketing"
-    }
-  ];
 
   useEffect(() => {
-    // Simuler le chargement des données
     const loadDashboardData = async () => {
       setLoading(true);
       try {
-        // TODO: Remplacer par l'appel API réel
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setStats(mockStats);
-        setRecentRequests(mockRecentRequests);
+        // Charger les statistiques des mandats
+        const statsResponse = await apiClient.getMandateStatistics();
+        // Charger les mandats récents
+        const mandatesResponse = await apiClient.getRecentMandates();
+        
+        if (statsResponse.success && statsResponse.data) {
+          const statsData = statsResponse.data;
+          setStats({
+            totalRequests: statsData.total,
+            validatedRequests: statsData.superAdminApproved,
+            pendingRequests: statsData.pending,
+            rejectedRequests: statsData.rejected,
+            totalUsers: 0, // TODO: Récupérer depuis l'API users
+            activeUsers: 0  // TODO: Récupérer depuis l'API users
+          });
+        }
+
+        if (mandatesResponse.success && mandatesResponse.data) {
+          const recentMandates = mandatesResponse.data.slice(0, 5).map((mandate: MandateData) => ({
+            id: mandate.id,
+            clientName: `${mandate.formData.prenom} ${mandate.formData.nom}`,
+            email: mandate.formData.email,
+            status: mapBackendStatusToFrontend(mandate.status),
+            statusText: mapBackendStatusToFrontend(mandate.status) === "pending" ? "En attente" :
+                       mapBackendStatusToFrontend(mandate.status) === "validated" ? "Validé" : "Rejeté",
+            createdAt: mandate.createdAt,
+            department: mandate.formData.circonscription
+          }));
+          setRecentRequests(recentMandates);
+        }
       } catch (error) {
         console.error("Erreur lors du chargement du dashboard:", error);
+        // Fallback aux données mockées en cas d'erreur
+        const mockStats: DashboardStats = {
+          totalRequests: 0,
+          validatedRequests: 0,
+          pendingRequests: 0,
+          rejectedRequests: 0,
+          totalUsers: 0,
+          activeUsers: 0
+        };
+        setStats(mockStats);
+        setRecentRequests([]);
       } finally {
         setLoading(false);
       }
@@ -316,7 +331,10 @@ export default function Dashboard() {
 
         <div className="px-6 py-4 border-t border-gray-200 bg-gray-50/50">
           <div className="text-center">
-            <button className="text-sm font-medium text-[#FF8200] hover:text-[#E67300] transition-colors duration-200">
+            <button
+              onClick={handleViewAllRequests}
+              className="text-sm font-medium text-[#FF8200] hover:text-[#E67300] transition-colors duration-200"
+            >
               Voir toutes les demandes →
             </button>
           </div>
