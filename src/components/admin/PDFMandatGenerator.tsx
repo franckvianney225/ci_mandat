@@ -2,6 +2,7 @@
 import { jsPDF } from 'jspdf';
 import { useEffect, forwardRef, useImperativeHandle } from 'react';
 import { createRoot } from 'react-dom/client';
+import QRCode from 'qrcode';
 
 interface MandateData {
   id: string;
@@ -28,6 +29,31 @@ const PDFMandatGenerator = forwardRef(({
     const doc = new jsPDF('portrait', 'mm', 'a4');
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
+
+    // Générer le QR code
+    const generateQRCode = async (): Promise<string> => {
+      try {
+        // Générer l'URL de vérification similaire au backend
+        const baseUrl = window.location.origin;
+        const verificationUrl = `${baseUrl}/verification?ref=${mandate.referenceNumber}`;
+        
+        const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
+          width: 150,
+          margin: 1,
+          color: {
+            dark: '#FF8200', // Orange CI-Mandat
+            light: '#FFFFFF'
+          }
+        });
+        
+        return qrCodeDataUrl;
+      } catch (error) {
+        console.error('Erreur lors de la génération du QR code:', error);
+        return '';
+      }
+    };
+
+    const qrCodeDataUrl = await generateQRCode();
     
     // Couleurs
     const primaryColor: [number, number, number] = [0, 0, 0]; // Noir
@@ -168,11 +194,28 @@ const PDFMandatGenerator = forwardRef(({
     doc.setFontSize(12);
     doc.text(`Dr ${mandate.prenom} ${mandate.nom}`, signatureX, yPos, { align: 'center' });
     
-    // Référence en bas
+    // Ajouter le QR code en bas à droite
+    if (qrCodeDataUrl) {
+      const qrCodeWidth = 30;
+      const qrCodeHeight = 30;
+      const qrCodeX = pageWidth - qrCodeWidth - 20;
+      const qrCodeY = pageHeight - qrCodeHeight - 20;
+      
+      doc.addImage(qrCodeDataUrl, 'PNG', qrCodeX, qrCodeY, qrCodeWidth, qrCodeHeight);
+      
+      // Texte sous le QR code
+      doc.setFontSize(6);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 100, 100);
+      doc.text('Scanner pour vérifier', qrCodeX, qrCodeY + qrCodeHeight + 5, { align: 'center' });
+      doc.text('l\'authenticité', qrCodeX + qrCodeWidth / 2, qrCodeY + qrCodeHeight + 8, { align: 'center' });
+    }
+
+    // Référence en bas à gauche
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text(`Référence: ${mandate.referenceNumber}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    doc.text(`Référence: ${mandate.referenceNumber}`, 20, pageHeight - 10);
     
     // Sauvegarder le PDF
     const fileName = `mandat_${mandate.referenceNumber}.pdf`;

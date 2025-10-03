@@ -56,7 +56,7 @@ export class SecurityService {
         width: 200,
         margin: 2,
         color: {
-          dark: '#000000',
+          dark: '#FF8200', // Orange CI-Mandat
           light: '#FFFFFF'
         }
       });
@@ -78,7 +78,7 @@ export class SecurityService {
         width: 150,
         margin: 1,
         color: {
-          dark: '#000000',
+          dark: '#FF8200', // Orange CI-Mandat
           light: '#FFFFFF'
         }
       });
