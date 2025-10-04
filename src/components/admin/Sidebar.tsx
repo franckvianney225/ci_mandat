@@ -42,9 +42,16 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
     fetchCurrentUser();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    router.push("/ci-mandat-admin");
+  const handleLogout = async () => {
+    try {
+      // Appeler l'endpoint de déconnexion pour supprimer le cookie côté serveur
+      await apiClient.logout();
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
+    } finally {
+      // Rediriger vers la page de connexion
+      router.push("/ci-mandat-admin");
+    }
   };
 
   const menuItems = [

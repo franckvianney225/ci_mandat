@@ -30,12 +30,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     // Vérifier si l'utilisateur est authentifié et récupérer ses informations
     const checkAuth = async () => {
-      const token = localStorage.getItem("adminToken");
-      if (!token) {
-        router.push("/ci-mandat-admin");
-        return;
-      }
-
       try {
         const response = await apiClient.verifyToken();
         if (response.success && response.data) {

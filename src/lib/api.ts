@@ -103,14 +103,12 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
-    const token = this.getToken();
-    
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
         ...options.headers,
       },
+      credentials: 'include', // Toujours envoyer les cookies
       ...options,
     };
 
@@ -143,12 +141,8 @@ class ApiClient {
     }
   }
 
-  private getToken(): string | null {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('adminToken');
-    }
-    return null;
-  }
+  // Supprimer la méthode getToken() qui lisait depuis localStorage
+  // Les cookies sont maintenant gérés automatiquement par le navigateur
 
   // Users API
   async getUsers(params?: {
@@ -232,6 +226,12 @@ class ApiClient {
 
   async verifyToken(): Promise<ApiResponse<{ user: AuthUser }>> {
     return this.request('/auth/profile');
+  }
+
+  async logout(): Promise<ApiResponse> {
+    return this.request('/auth/logout', {
+      method: 'POST',
+    });
   }
 
   async updateProfile(profileData: {
@@ -413,13 +413,9 @@ class ApiClient {
   }
 
   async generateMandatePDF(mandateId: string): Promise<Blob> {
-    const token = this.getToken();
-    
     const response = await fetch(`${API_BASE_URL}/mandates/${mandateId}/pdf`, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+      credentials: 'include', // Envoyer les cookies automatiquement
     });
     
     if (!response.ok) {

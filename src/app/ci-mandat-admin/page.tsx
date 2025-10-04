@@ -28,7 +28,7 @@ export default function AdminLogin() {
     setError("");
 
     try {
-      // Authentification réelle avec l'API backend
+      // Authentification avec credentials: 'include' pour envoyer les cookies
       const response = await apiClient.login({
         email: credentials.email,
         password: credentials.password
@@ -39,9 +39,8 @@ export default function AdminLogin() {
       console.log('🔑 Data:', response.data);
 
       if (response.success && response.data) {
-        // Stocker le token JWT sécurisé
-        localStorage.setItem("adminToken", response.data.access_token);
-        console.log('✅ Token stocké, redirection...');
+        console.log('✅ Connexion réussie, cookie stocké automatiquement');
+        // Plus besoin de stocker le token manuellement
         // Redirection vers le tableau de bord d'administration
         router.push("/ci-mandat-admin/dashboard");
       } else {

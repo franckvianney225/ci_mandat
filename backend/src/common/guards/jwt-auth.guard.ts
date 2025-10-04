@@ -9,6 +9,13 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   canActivate(context: ExecutionContext) {
+    const request = context.switchToHttp().getRequest();
+    
+    // Vérifier d'abord les cookies
+    if (request.cookies?.adminToken) {
+      request.headers.authorization = `Bearer ${request.cookies.adminToken}`;
+    }
+    
     // Vérifier si la route est publique
     const isPublic = this.reflector.getAllAndOverride<boolean>('isPublic', [
       context.getHandler(),

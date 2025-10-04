@@ -39,7 +39,7 @@ let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
-    async login(body) {
+    async login(body, res) {
         console.log('📨 Corps de la requête brute:', body);
         console.log('🔍 Type de body:', typeof body);
         console.log('🔍 Clés de body:', Object.keys(body));
@@ -54,7 +54,15 @@ let AuthController = class AuthController {
             console.error('❌ Données manquantes dans la requête');
             throw new common_1.UnauthorizedException('Email ou mot de passe incorrect');
         }
-        return this.authService.login(email, password);
+        const loginResponse = await this.authService.login(email, password);
+        res.cookie('adminToken', loginResponse.access_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 24 * 60 * 60 * 1000,
+            path: '/',
+        });
+        return { user: loginResponse.user };
     }
     async register(registerDto) {
         return this.authService.register(registerDto.email, registerDto.password, registerDto.personalData, registerDto.role);
@@ -69,7 +77,13 @@ let AuthController = class AuthController {
     async updateProfile(req, updateProfileDto) {
         return this.authService.updateProfile(req.user.id, updateProfileDto);
     }
-    async logout() {
+    async logout(res) {
+        res.clearCookie('adminToken', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            path: '/',
+        });
         return { message: 'Déconnexion réussie' };
     }
 };
@@ -78,8 +92,9 @@ __decorate([
     (0, common_1.Post)('login'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 __decorate([
@@ -121,8 +136,9 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Post)('logout'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "logout", null);
 exports.AuthController = AuthController = __decorate([

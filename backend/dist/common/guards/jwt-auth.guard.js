@@ -19,6 +19,10 @@ let JwtAuthGuard = class JwtAuthGuard extends (0, passport_1.AuthGuard)('jwt') {
         this.reflector = reflector;
     }
     canActivate(context) {
+        const request = context.switchToHttp().getRequest();
+        if (request.cookies?.adminToken) {
+            request.headers.authorization = `Bearer ${request.cookies.adminToken}`;
+        }
         const isPublic = this.reflector.getAllAndOverride('isPublic', [
             context.getHandler(),
             context.getClass(),

@@ -9,7 +9,9 @@ import {
   HttpStatus,
   UnauthorizedException,
   Patch,
+  Res, // Ajouter Res pour la réponse
 } from '@nestjs/common';
+import { Response } from 'express'; // Importer Response
 import { AuthService, LoginResponse } from './auth.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { UserRole } from '../../entities/user.entity';
@@ -55,7 +57,10 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() body: any): Promise<LoginResponse> {
+  async login(
+    @Body() body: any,
+    @Res({ passthrough: true }) res: Response // Injecter la réponse
+  ): Promise<{ user: any }> { // Retirer access_token du retour
     console.log('📨 Corps de la requête brute:', body);
     console.log('🔍 Type de body:', typeof body);
     console.log('🔍 Clés de body:', Object.keys(body));
@@ -75,7 +80,19 @@ export class AuthController {
       throw new UnauthorizedException('Email ou mot de passe incorrect');
     }
     
-    return this.authService.login(email, password);
+    const loginResponse = await this.authService.login(email, password);
+    
+    // Définir le cookie HttpOnly sécurisé
+    res.cookie('adminToken', loginResponse.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // HTTPS en production
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000, // 24 heures
+      path: '/',
+    });
+    
+    // Retourner seulement les infos utilisateur
+    return { user: loginResponse.user };
   }
 
   @Post('register')
@@ -126,9 +143,15 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout() {
-    // Dans une implémentation plus avancée, on pourrait blacklister le token
-    // Pour l'instant, le logout est géré côté client
+  async logout(@Res({ passthrough: true }) res: Response) {
+    // Effacer le cookie
+    res.clearCookie('adminToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
+    
     return { message: 'Déconnexion réussie' };
   }
 }
