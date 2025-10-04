@@ -23,6 +23,7 @@ const email_module_1 = require("./modules/email/email.module");
 const pdf_module_1 = require("./modules/pdf/pdf.module");
 const security_module_1 = require("./modules/security/security.module");
 const verification_module_1 = require("./modules/verification/verification.module");
+const redis_module_1 = require("./modules/redis/redis.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -55,6 +56,9 @@ exports.AppModule = AppModule = __decorate([
                     SESSION_TIMEOUT: Joi.number().default(3600000),
                     FRONTEND_URL: Joi.string().uri().required(),
                     BACKEND_URL: Joi.string().uri().required(),
+                    REDIS_HOST: Joi.string().default('localhost'),
+                    REDIS_PORT: Joi.number().default(6379),
+                    REDIS_PASSWORD: Joi.string().optional(),
                     LOG_LEVEL: Joi.string()
                         .valid('error', 'warn', 'info', 'debug')
                         .default('info'),
@@ -115,6 +119,7 @@ exports.AppModule = AppModule = __decorate([
             pdf_module_1.PdfModule,
             security_module_1.SecurityModule,
             verification_module_1.VerificationModule,
+            redis_module_1.RedisModule,
         ],
         providers: [
             {

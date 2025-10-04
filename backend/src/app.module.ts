@@ -18,6 +18,7 @@ import { EmailModule } from './modules/email/email.module';
 import { PdfModule } from './modules/pdf/pdf.module';
 import { SecurityModule } from './modules/security/security.module';
 import { VerificationModule } from './modules/verification/verification.module';
+import { RedisModule } from './modules/redis/redis.module';
 
 // Guards et Intercepteurs
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -65,6 +66,11 @@ import { RolesGuard } from './common/guards/roles.guard';
         // URLs
         FRONTEND_URL: Joi.string().uri().required(),
         BACKEND_URL: Joi.string().uri().required(),
+
+        // Redis
+        REDIS_HOST: Joi.string().default('localhost'),
+        REDIS_PORT: Joi.number().default(6379),
+        REDIS_PASSWORD: Joi.string().optional(),
 
         // Logging
         LOG_LEVEL: Joi.string()
@@ -135,6 +141,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     PdfModule,
     SecurityModule,
     VerificationModule,
+    RedisModule,
   ],
   providers: [
     // Guards globaux

@@ -4,7 +4,7 @@ import { Fragment, useState } from "react";
 import ValidateConfirm from "./ValidateConfirm";
 import RejectConfirm from "./RejectConfirm";
 import { apiClient } from "@/lib/api";
-import { generateMandatePDF } from "./PDFMandatGenerator";
+import PDFMandatGeneratorAsync from "./PDFMandatGeneratorAsync";
 
 interface Request {
   id: string;
@@ -28,6 +28,7 @@ interface ClientDetailsModalProps {
 export default function ClientDetailsModal({ isOpen, onClose, request, onStatusChange }: ClientDetailsModalProps) {
   const [isValidateConfirmOpen, setIsValidateConfirmOpen] = useState(false);
   const [isRejectConfirmOpen, setIsRejectConfirmOpen] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   if (!isOpen || !request) return null;
 
@@ -65,7 +66,8 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
 
   const handlePrintPDF = async () => {
     try {
-      // Utiliser la génération frontend avec jspdf
+      setIsGeneratingPDF(true);
+      
       const mandateData = {
         id: request.id,
         nom: request.nom,
@@ -78,10 +80,11 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
         createdAt: request.createdAt
       };
       
-      generateMandatePDF(mandateData);
+      // La génération sera gérée par PDFMandatGeneratorAsync
     } catch (error) {
       console.error('Erreur lors de la génération du PDF:', error);
       alert('Erreur lors de la génération du PDF.');
+      setIsGeneratingPDF(false);
     }
   };
 
@@ -325,6 +328,29 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
           id: request.id
         } : null}
       />
+
+      {/* Composant de génération PDF asynchrone */}
+      {isGeneratingPDF && (
+        <PDFMandatGeneratorAsync
+          mandate={{
+            id: request.id,
+            nom: request.nom,
+            prenom: request.prenom,
+            email: request.email,
+            telephone: request.telephone,
+            circonscription: request.circonscription,
+            referenceNumber: request.referenceNumber,
+            status: request.status,
+            createdAt: request.createdAt
+          }}
+          onClose={() => setIsGeneratingPDF(false)}
+          onProgress={(progress) => console.log(`Progression PDF: ${progress}%`)}
+          onError={(error) => {
+            console.error('Erreur génération PDF:', error);
+            alert(`Erreur lors de la génération du PDF: ${error}`);
+          }}
+        />
+      )}
     </Fragment>
   );
 }

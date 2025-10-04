@@ -62,6 +62,7 @@
     "qrcode": "^1.5.4",
     "speakeasy": "^2.0.0",
     "typeorm": "^0.3.0",
+    "ioredis": "^5.3.2",
     "uuid": "^9.0.0",
     "winston": "^3.10.0"
   },

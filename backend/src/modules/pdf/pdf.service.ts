@@ -2,12 +2,17 @@ import { Injectable, Logger } from '@nestjs/common';
 import { jsPDF } from 'jspdf';
 import { Mandate } from '../../entities/mandate.entity';
 import { SecurityService } from '../security/security.service';
+import { RedisService } from '../redis/redis.service';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class PdfService {
   private readonly logger = new Logger(PdfService.name);
 
-  constructor(private securityService: SecurityService) {}
+  constructor(
+    private securityService: SecurityService,
+    private redisService: RedisService,
+  ) {}
 
   /**
    * Ajoute un filigrane de sécurité OFFICIEL répété sur toute la page
@@ -228,6 +233,104 @@ export class PdfService {
       return { pdfBuffer, fileName };
     } catch (error) {
       this.logger.error(`Erreur lors de la génération du PDF pour le mandat ${mandate.id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Génère un PDF de manière asynchrone avec cache
+   */
+  async generateMandatePDFAsync(mandate: Mandate): Promise<{ jobId: string }> {
+    try {
+      // Vérifier d'abord le cache
+      const cachedPDF = await this.redisService.getCachedPDF(mandate.referenceNumber);
+      if (cachedPDF) {
+        this.logger.log(`PDF trouvé en cache pour: ${mandate.referenceNumber}`);
+        const jobId = uuidv4();
+        await this.redisService.setPDFGenerationStatus(jobId, 'completed', {
+          pdfBuffer: cachedPDF,
+          fileName: `mandat_${mandate.referenceNumber}.pdf`
+        });
+        return { jobId };
+      }
+
+      // Créer un job de génération
+      const jobId = uuidv4();
+      await this.redisService.setPDFGenerationStatus(jobId, 'pending');
+
+      // Lancer la génération en arrière-plan
+      this.processPDFGeneration(jobId, mandate);
+
+      return { jobId };
+    } catch (error) {
+      this.logger.error(`Erreur lors du démarrage de la génération asynchrone pour ${mandate.id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Traitement asynchrone de la génération PDF
+   */
+  private async processPDFGeneration(jobId: string, mandate: Mandate): Promise<void> {
+    try {
+      await this.redisService.setPDFGenerationStatus(jobId, 'processing');
+
+      // Générer le PDF
+      const { pdfBuffer, fileName } = await this.generateMandatePDF(mandate);
+
+      // Mettre en cache
+      await this.redisService.cachePDF(mandate.referenceNumber, pdfBuffer);
+
+      // Mettre à jour le statut
+      await this.redisService.setPDFGenerationStatus(jobId, 'completed', {
+        pdfBuffer,
+        fileName
+      });
+
+      this.logger.log(`Génération PDF asynchrone terminée pour job: ${jobId}`);
+    } catch (error) {
+      this.logger.error(`Erreur lors de la génération asynchrone pour job ${jobId}:`, error);
+      await this.redisService.setPDFGenerationStatus(jobId, 'failed', {
+        error: error instanceof Error ? error.message : 'Erreur inconnue'
+      });
+    }
+  }
+
+  /**
+   * Récupère le statut d'une génération PDF
+   */
+  async getPDFGenerationStatus(jobId: string): Promise<{ status: string; data?: any; timestamp: string } | null> {
+    return this.redisService.getPDFGenerationStatus(jobId);
+  }
+
+  /**
+   * Récupère un PDF depuis le cache
+   */
+  async getCachedPDF(referenceNumber: string): Promise<{ pdfBuffer: Buffer; fileName: string } | null> {
+    try {
+      const pdfBuffer = await this.redisService.getCachedPDF(referenceNumber);
+      if (pdfBuffer) {
+        return {
+          pdfBuffer,
+          fileName: `mandat_${referenceNumber}.pdf`
+        };
+      }
+      return null;
+    } catch (error) {
+      this.logger.error(`Erreur lors de la récupération du PDF en cache pour ${referenceNumber}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Supprime un PDF du cache
+   */
+  async deleteCachedPDF(referenceNumber: string): Promise<void> {
+    try {
+      await this.redisService.deleteCachedPDF(referenceNumber);
+      this.logger.log(`PDF supprimé du cache pour: ${referenceNumber}`);
+    } catch (error) {
+      this.logger.error(`Erreur lors de la suppression du PDF en cache pour ${referenceNumber}:`, error);
       throw error;
     }
   }
