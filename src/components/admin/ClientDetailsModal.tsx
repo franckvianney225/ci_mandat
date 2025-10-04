@@ -262,7 +262,7 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
 
             {/* Section d'actions */}
             <div className="mt-8 pt-6 border-t border-gray-200">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-end items-center">
                 {request.status !== "validated" && (
                   <div className="flex gap-3">
                     <button
