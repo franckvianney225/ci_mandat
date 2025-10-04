@@ -102,6 +102,19 @@ export default function Home() {
     return `${baseClass} border-gray-300 focus:border-orange-500`;
   };
 
+  const ErrorIndicator = ({ fieldName }: { fieldName: string }) => {
+    if (!getFieldError(fieldName)) return null;
+    
+    return (
+      <div className="flex items-center text-red-600">
+        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+        </svg>
+        <span className="text-sm font-medium">Erreur</span>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">
@@ -140,9 +153,12 @@ export default function Home() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Nom */}
                   <div>
-                    <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-2">
-                      Nom *
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label htmlFor="nom" className="block text-sm font-medium text-gray-700">
+                        Nom *
+                      </label>
+                      <ErrorIndicator fieldName="nom" />
+                    </div>
                     <input
                       type="text"
                       id="nom"
@@ -160,9 +176,12 @@ export default function Home() {
 
                   {/* Prénom */}
                   <div>
-                    <label htmlFor="prenom" className="block text-sm font-medium text-gray-700 mb-2">
-                      Prénom *
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label htmlFor="prenom" className="block text-sm font-medium text-gray-700">
+                        Prénom *
+                      </label>
+                      <ErrorIndicator fieldName="prenom" />
+                    </div>
                     <input
                       type="text"
                       id="prenom"
@@ -180,9 +199,12 @@ export default function Home() {
 
                   {/* Email */}
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                      Email *
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                        Email *
+                      </label>
+                      <ErrorIndicator fieldName="email" />
+                    </div>
                     <input
                       type="email"
                       id="email"
@@ -200,9 +222,12 @@ export default function Home() {
 
                   {/* Fonction */}
                   <div>
-                    <label htmlFor="fonction" className="block text-sm font-medium text-gray-700 mb-2">
-                      Fonction *
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label htmlFor="fonction" className="block text-sm font-medium text-gray-700">
+                        Fonction *
+                      </label>
+                      <ErrorIndicator fieldName="fonction" />
+                    </div>
                     <input
                       type="text"
                       id="fonction"
@@ -220,9 +245,12 @@ export default function Home() {
 
                   {/* Téléphone */}
                   <div>
-                    <label htmlFor="telephone" className="block text-sm font-medium text-gray-700 mb-2">
-                      Numéro de téléphone *
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label htmlFor="telephone" className="block text-sm font-medium text-gray-700">
+                        Numéro de téléphone *
+                      </label>
+                      <ErrorIndicator fieldName="telephone" />
+                    </div>
                     <input
                       type="tel"
                       id="telephone"
