@@ -83,8 +83,19 @@ import { RolesGuard } from './common/guards/roles.guard';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => [
         {
-          ttl: config.get<number>('RATE_LIMIT_WINDOW', 900000),
-          limit: 100, // 100 requêtes par fenêtre
+          name: 'global',
+          ttl: 60000, // 1 minute
+          limit: 100, // 100 requêtes par minute pour les endpoints généraux
+        },
+        {
+          name: 'mandate-creation',
+          ttl: 60000, // 1 minute
+          limit: 5, // 5 créations de mandat par minute par IP
+        },
+        {
+          name: 'auth',
+          ttl: 60000, // 1 minute
+          limit: 10, // 10 tentatives de connexion par minute
         },
       ],
     }),

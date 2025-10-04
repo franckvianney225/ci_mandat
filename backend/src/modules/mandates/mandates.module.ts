@@ -8,6 +8,7 @@ import { User } from '../../entities/user.entity';
 import { SettingsModule } from '../settings/settings.module';
 import { EmailModule } from '../email/email.module';
 import { PdfModule } from '../pdf/pdf.module';
+import { SecurityModule } from '../security/security.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { PdfModule } from '../pdf/pdf.module';
     SettingsModule,
     EmailModule,
     PdfModule,
+    SecurityModule,
   ],
   controllers: [MandatesController],
   providers: [MandatesService],

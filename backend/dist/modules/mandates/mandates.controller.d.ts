@@ -4,10 +4,12 @@ import { CreateMandateDto } from './dto/create-mandate.dto';
 import { UpdateMandateDto } from './dto/update-mandate.dto';
 import { MandateFiltersDto } from './dto/mandate-filters.dto';
 import { RejectMandateDto } from './dto/reject-mandate.dto';
+import { RecaptchaService } from '../security/recaptcha.service';
 export declare class MandatesController {
     private readonly mandatesService;
-    constructor(mandatesService: MandatesService);
-    create(createMandateDto: CreateMandateDto): Promise<{
+    private readonly recaptchaService;
+    constructor(mandatesService: MandatesService, recaptchaService: RecaptchaService);
+    create(createMandateDto: CreateMandateDto, recaptchaToken?: string): Promise<{
         success: boolean;
         data: import("../../entities/mandate.entity").Mandate;
         message: string;

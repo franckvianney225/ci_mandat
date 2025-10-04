@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MandatesController = void 0;
 const common_1 = require("@nestjs/common");
+const throttler_1 = require("@nestjs/throttler");
 const mandates_service_1 = require("./mandates.service");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
@@ -22,12 +23,15 @@ const create_mandate_dto_1 = require("./dto/create-mandate.dto");
 const update_mandate_dto_1 = require("./dto/update-mandate.dto");
 const mandate_filters_dto_1 = require("./dto/mandate-filters.dto");
 const reject_mandate_dto_1 = require("./dto/reject-mandate.dto");
+const recaptcha_service_1 = require("../security/recaptcha.service");
 let MandatesController = class MandatesController {
-    constructor(mandatesService) {
+    constructor(mandatesService, recaptchaService) {
         this.mandatesService = mandatesService;
+        this.recaptchaService = recaptchaService;
     }
-    async create(createMandateDto) {
+    async create(createMandateDto, recaptchaToken) {
         try {
+            await this.recaptchaService.verifyTokenOrThrow(recaptchaToken, 'mandate_submission');
             const mandate = await this.mandatesService.create(createMandateDto);
             return {
                 success: true,
@@ -87,9 +91,11 @@ let MandatesController = class MandatesController {
 exports.MandatesController = MandatesController;
 __decorate([
     (0, common_1.Post)(),
+    (0, throttler_1.Throttle)({ default: { ttl: 60000, limit: 5 } }),
     __param(0, (0, common_1.Body)(common_1.ValidationPipe)),
+    __param(1, (0, common_1.Headers)('x-recaptcha-token')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_mandate_dto_1.CreateMandateDto]),
+    __metadata("design:paramtypes", [create_mandate_dto_1.CreateMandateDto, String]),
     __metadata("design:returntype", Promise)
 ], MandatesController.prototype, "create", null);
 __decorate([
@@ -179,6 +185,7 @@ __decorate([
 ], MandatesController.prototype, "generatePDF", null);
 exports.MandatesController = MandatesController = __decorate([
     (0, common_1.Controller)('mandates'),
-    __metadata("design:paramtypes", [mandates_service_1.MandatesService])
+    __metadata("design:paramtypes", [mandates_service_1.MandatesService,
+        recaptcha_service_1.RecaptchaService])
 ], MandatesController);
 //# sourceMappingURL=mandates.controller.js.map

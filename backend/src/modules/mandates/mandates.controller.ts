@@ -16,7 +16,9 @@ import {
   ExceptionFilter,
   ArgumentsHost,
   Res,
+  Headers,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { MandatesService } from './mandates.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -27,15 +29,26 @@ import { CreateMandateDto } from './dto/create-mandate.dto';
 import { UpdateMandateDto } from './dto/update-mandate.dto';
 import { MandateFiltersDto } from './dto/mandate-filters.dto';
 import { RejectMandateDto } from './dto/reject-mandate.dto';
+import { RecaptchaService } from '../security/recaptcha.service';
 
 @Controller('mandates')
 export class MandatesController {
-  constructor(private readonly mandatesService: MandatesService) {}
+  constructor(
+    private readonly mandatesService: MandatesService,
+    private readonly recaptchaService: RecaptchaService,
+  ) {}
 
   // Endpoint public pour créer un mandat (sans authentification)
   @Post()
-  async create(@Body(ValidationPipe) createMandateDto: CreateMandateDto) {
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  async create(
+    @Body(ValidationPipe) createMandateDto: CreateMandateDto,
+    @Headers('x-recaptcha-token') recaptchaToken?: string,
+  ) {
     try {
+      // Vérifier le token reCAPTCHA
+      await this.recaptchaService.verifyTokenOrThrow(recaptchaToken, 'mandate_submission');
+      
       const mandate = await this.mandatesService.create(createMandateDto);
       
       // Retourner le format attendu par le frontend

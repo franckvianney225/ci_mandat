@@ -1,13 +1,15 @@
+
 "use client";
 
 import { useState } from "react";
+import { GoogleReCaptchaProvider, useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { apiClient } from "@/lib/api";
 
 interface FieldErrors {
   [key: string]: string[];
 }
 
-export default function Home() {
+function MandateForm() {
   const [formData, setFormData] = useState({
     nom: "",
     prenom: "",
@@ -20,15 +22,28 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | string[] | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!executeRecaptcha) {
+      console.error('reCAPTCHA non initialisé');
+      setError("Veuillez patienter pendant le chargement de la protection de sécurité...");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setFieldErrors({});
 
     try {
-      const response = await apiClient.createMandate(formData);
+      // Générer le token reCAPTCHA
+      console.log('Génération du token reCAPTCHA...');
+      const recaptchaToken = await executeRecaptcha('mandate_submission');
+      console.log('Token reCAPTCHA généré:', recaptchaToken ? 'OUI' : 'NON');
+      
+      const response = await apiClient.createMandate(formData, recaptchaToken);
       
       if (response.success) {
         setIsSubmitted(true);
@@ -365,6 +380,15 @@ export default function Home() {
                     </div>
                   )}
 
+                  {/* Protection reCAPTCHA */}
+                  <div className="text-xs text-gray-500 text-center">
+                    Ce site est protégé par reCAPTCHA et soumis aux 
+                    <a href="https://policies.google.com/privacy" className="text-blue-600 hover:underline mx-1">Politique de confidentialité</a>
+                    et aux
+                    <a href="https://policies.google.com/terms" className="text-blue-600 hover:underline mx-1">Conditions d'utilisation</a>
+                    de Google.
+                  </div>
+
                   {/* Bouton de soumission */}
                   <button
                     type="submit"
@@ -385,17 +409,18 @@ export default function Home() {
                   </button>
                 </form>
               </div>
-
-              {/* Note */}
-              <div className="text-center mt-6">
-                <p className="text-sm text-gray-500">
-                  * Champs obligatoires
-                </p>
-              </div>
             </>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <GoogleReCaptchaProvider reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ""}>
+      <MandateForm />
+    </GoogleReCaptchaProvider>
   );
 }

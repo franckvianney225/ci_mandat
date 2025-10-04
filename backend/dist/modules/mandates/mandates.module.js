@@ -16,6 +16,7 @@ const user_entity_1 = require("../../entities/user.entity");
 const settings_module_1 = require("../settings/settings.module");
 const email_module_1 = require("../email/email.module");
 const pdf_module_1 = require("../pdf/pdf.module");
+const security_module_1 = require("../security/security.module");
 let MandatesModule = class MandatesModule {
 };
 exports.MandatesModule = MandatesModule;
@@ -26,6 +27,7 @@ exports.MandatesModule = MandatesModule = __decorate([
             settings_module_1.SettingsModule,
             email_module_1.EmailModule,
             pdf_module_1.PdfModule,
+            security_module_1.SecurityModule,
         ],
         controllers: [mandates_controller_1.MandatesController],
         providers: [mandates_service_1.MandatesService],

@@ -69,8 +69,19 @@ exports.AppModule = AppModule = __decorate([
                 inject: [config_1.ConfigService],
                 useFactory: (config) => [
                     {
-                        ttl: config.get('RATE_LIMIT_WINDOW', 900000),
+                        name: 'global',
+                        ttl: 60000,
                         limit: 100,
+                    },
+                    {
+                        name: 'mandate-creation',
+                        ttl: 60000,
+                        limit: 5,
+                    },
+                    {
+                        name: 'auth',
+                        ttl: 60000,
+                        limit: 10,
                     },
                 ],
             }),

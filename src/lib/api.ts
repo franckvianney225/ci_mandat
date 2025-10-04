@@ -149,7 +149,9 @@ class ApiClient {
       if (error instanceof ApiError) {
         throw error;
       }
-      throw new ApiError(0, 'Network error occurred');
+      console.error('Erreur réseau détaillée:', error);
+      console.error('URL tentée:', `${API_BASE_URL}${endpoint}`);
+      throw new ApiError(0, `Erreur de connexion au serveur. Vérifiez que le backend est démarré sur ${API_BASE_URL}`);
     }
   }
 
@@ -365,9 +367,21 @@ class ApiClient {
   }
 
   // Mandates API
-  async createMandate(mandateData: CreateMandateDto): Promise<ApiResponse<Mandate>> {
+  async createMandate(mandateData: CreateMandateDto, recaptchaToken?: string): Promise<ApiResponse<Mandate>> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (recaptchaToken) {
+      headers['X-Recaptcha-Token'] = recaptchaToken;
+      console.log('Token reCAPTCHA envoyé:', recaptchaToken.substring(0, 20) + '...');
+    } else {
+      console.warn('Aucun token reCAPTCHA fourni');
+    }
+
     return this.request('/mandates', {
       method: 'POST',
+      headers,
       body: JSON.stringify(mandateData),
     });
   }
