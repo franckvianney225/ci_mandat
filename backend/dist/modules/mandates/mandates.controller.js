@@ -18,28 +18,16 @@ const mandates_service_1 = require("./mandates.service");
 const jwt_auth_guard_1 = require("../../common/guards/jwt-auth.guard");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 const user_entity_1 = require("../../entities/user.entity");
-class CreateMandateDto {
-}
-class UpdateMandateDto {
-}
-class MandateFiltersDto {
-}
-class RejectMandateDto {
-}
+const create_mandate_dto_1 = require("./dto/create-mandate.dto");
+const update_mandate_dto_1 = require("./dto/update-mandate.dto");
+const mandate_filters_dto_1 = require("./dto/mandate-filters.dto");
+const reject_mandate_dto_1 = require("./dto/reject-mandate.dto");
 let MandatesController = class MandatesController {
     constructor(mandatesService) {
         this.mandatesService = mandatesService;
     }
-    async create(body) {
+    async create(createMandateDto) {
         try {
-            const createMandateDto = {
-                nom: body.nom || '',
-                prenom: body.prenom || '',
-                fonction: body.fonction || '',
-                email: body.email || '',
-                telephone: body.telephone || '',
-                circonscription: body.circonscription || ''
-            };
             const mandate = await this.mandatesService.create(createMandateDto);
             return {
                 success: true,
@@ -99,18 +87,18 @@ let MandatesController = class MandatesController {
 exports.MandatesController = MandatesController;
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, common_1.Body)(common_1.ValidationPipe)),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [create_mandate_dto_1.CreateMandateDto]),
     __metadata("design:returntype", Promise)
 ], MandatesController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, roles_decorator_1.Roles)(user_entity_1.UserRole.ADMIN, user_entity_1.UserRole.SUPER_ADMIN),
-    __param(0, (0, common_1.Query)()),
+    __param(0, (0, common_1.Query)(common_1.ValidationPipe)),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [MandateFiltersDto]),
+    __metadata("design:paramtypes", [mandate_filters_dto_1.MandateFiltersDto]),
     __metadata("design:returntype", Promise)
 ], MandatesController.prototype, "findAll", null);
 __decorate([
@@ -143,9 +131,9 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, roles_decorator_1.Roles)(user_entity_1.UserRole.ADMIN, user_entity_1.UserRole.SUPER_ADMIN),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    __param(1, (0, common_1.Body)(common_1.ValidationPipe)),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, UpdateMandateDto]),
+    __metadata("design:paramtypes", [String, update_mandate_dto_1.UpdateMandateDto]),
     __metadata("design:returntype", Promise)
 ], MandatesController.prototype, "update", null);
 __decorate([
@@ -173,10 +161,10 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, roles_decorator_1.Roles)(user_entity_1.UserRole.ADMIN, user_entity_1.UserRole.SUPER_ADMIN),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    __param(1, (0, common_1.Body)(common_1.ValidationPipe)),
     __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, RejectMandateDto, Object]),
+    __metadata("design:paramtypes", [String, reject_mandate_dto_1.RejectMandateDto, Object]),
     __metadata("design:returntype", Promise)
 ], MandatesController.prototype, "reject", null);
 __decorate([

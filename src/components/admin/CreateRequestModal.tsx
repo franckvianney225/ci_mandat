@@ -19,7 +19,7 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess }: Creat
     circonscription: ""
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | string[] | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -43,9 +43,22 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess }: Creat
       } else {
         setError(response.error || "Une erreur est survenue lors de la création de la demande");
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Erreur lors de la création de la demande:", err);
-      setError("Erreur de connexion au serveur. Veuillez réessayer.");
+      
+      // Gestion des erreurs de validation du backend
+      if (err && typeof err === 'object' && 'response' in err) {
+        const errorWithResponse = err as { response?: { data?: { message?: string | string[] } } };
+        if (errorWithResponse.response?.data?.message) {
+          setError(errorWithResponse.response.data.message);
+        } else {
+          setError("Données invalides. Veuillez vérifier les informations saisies.");
+        }
+      } else if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string' && err.message.includes("400")) {
+        setError("Données invalides. Veuillez vérifier les informations saisies.");
+      } else {
+        setError("Erreur de connexion au serveur. Veuillez réessayer.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -252,7 +265,18 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess }: Creat
             {/* Message d'erreur */}
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-red-700 text-sm">{error}</p>
+                {Array.isArray(error) ? (
+                  <ul className="text-red-700 text-sm space-y-1">
+                    {error.map((err, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="mr-2">•</span>
+                        <span>{err}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-red-700 text-sm">{error}</p>
+                )}
               </div>
             )}
 

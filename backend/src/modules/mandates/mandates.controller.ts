@@ -23,31 +23,10 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../entities/user.entity';
 import { MandateStatus } from '../../entities/mandate.entity';
 import { Response } from 'express';
-
-class CreateMandateDto {
-  nom: string;
-  prenom: string;
-  fonction: string;
-  email: string;
-  telephone: string;
-  circonscription: string;
-}
-
-class UpdateMandateDto {
-  status?: MandateStatus;
-  rejectionReason?: string;
-}
-
-class MandateFiltersDto {
-  search?: string;
-  status?: MandateStatus;
-  page?: number;
-  limit?: number;
-}
-
-class RejectMandateDto {
-  reason: string;
-}
+import { CreateMandateDto } from './dto/create-mandate.dto';
+import { UpdateMandateDto } from './dto/update-mandate.dto';
+import { MandateFiltersDto } from './dto/mandate-filters.dto';
+import { RejectMandateDto } from './dto/reject-mandate.dto';
 
 @Controller('mandates')
 export class MandatesController {
@@ -55,18 +34,8 @@ export class MandatesController {
 
   // Endpoint public pour créer un mandat (sans authentification)
   @Post()
-  async create(@Body() body: any) {
+  async create(@Body(ValidationPipe) createMandateDto: CreateMandateDto) {
     try {
-      // Créer manuellement le DTO à partir du body
-      const createMandateDto: CreateMandateDto = {
-        nom: body.nom || '',
-        prenom: body.prenom || '',
-        fonction: body.fonction || '',
-        email: body.email || '',
-        telephone: body.telephone || '',
-        circonscription: body.circonscription || ''
-      };
-      
       const mandate = await this.mandatesService.create(createMandateDto);
       
       // Retourner le format attendu par le frontend
@@ -88,7 +57,7 @@ export class MandatesController {
   @Get()
   @UseGuards(JwtAuthGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-  async findAll(@Query() filters: MandateFiltersDto) {
+  async findAll(@Query(ValidationPipe) filters: MandateFiltersDto) {
     return this.mandatesService.findAll(filters);
   }
 
@@ -116,7 +85,7 @@ export class MandatesController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-  async update(@Param('id') id: string, @Body() updateMandateDto: UpdateMandateDto) {
+  async update(@Param('id') id: string, @Body(ValidationPipe) updateMandateDto: UpdateMandateDto) {
     return this.mandatesService.update(id, updateMandateDto);
   }
 
@@ -141,7 +110,7 @@ export class MandatesController {
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async reject(
     @Param('id') id: string,
-    @Body() rejectMandateDto: RejectMandateDto,
+    @Body(ValidationPipe) rejectMandateDto: RejectMandateDto,
     @Req() req: any,
   ) {
     const adminId = req.user.id;

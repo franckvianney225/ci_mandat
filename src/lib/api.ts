@@ -116,7 +116,19 @@ class ApiClient {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
       
       if (!response.ok) {
-        throw new ApiError(response.status, `HTTP error! status: ${response.status}`);
+        // Récupérer les données d'erreur détaillées du backend
+        let errorData: any = null;
+        try {
+          errorData = await response.json();
+        } catch {
+          // Si le backend ne retourne pas de JSON, utiliser le message par défaut
+          errorData = { message: `HTTP error! status: ${response.status}` };
+        }
+        
+        // Créer une erreur avec les données détaillées
+        const error = new ApiError(response.status, errorData.message || `HTTP error! status: ${response.status}`);
+        (error as any).responseData = errorData;
+        throw error;
       }
 
       const data = await response.json();

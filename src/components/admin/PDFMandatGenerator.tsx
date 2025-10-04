@@ -100,7 +100,11 @@ const SecurityUtils = {
    */
   async generateSignature(mandate: MandateData): Promise<string> {
     // IMPORTANT: Cette clé doit être identique à celle du backend
-    const secretKey = 'mandat-secret-key-2025';
+    const secretKey = process.env.NEXT_PUBLIC_PDF_SIGNATURE_SECRET;
+    
+    if (!secretKey) {
+      throw new Error('Clé secrète pour la signature PDF non configurée');
+    }
     
     // Même logique que le backend: id + referenceNumber + timestamp
     const dataToSign = `${mandate.id}-${mandate.referenceNumber}-${new Date(mandate.createdAt).getTime()}`;
@@ -133,9 +137,10 @@ const SecurityUtils = {
    * Génère une URL de vérification identique au backend
    * Utilise la même logique que SecurityService.generateVerificationUrl()
    */
-  async generateVerificationUrl(mandate: MandateData, baseUrl: string = 'http://localhost:3000'): Promise<string> {
+  async generateVerificationUrl(mandate: MandateData, baseUrl?: string): Promise<string> {
     const signature = await this.generateSignature(mandate);
-    return `${baseUrl}/verification?ref=${mandate.referenceNumber}&sig=${signature}`;
+    const verificationBaseUrl = baseUrl || process.env.NEXT_PUBLIC_VERIFICATION_BASE_URL || 'http://localhost:3000';
+    return `${verificationBaseUrl}/verification?ref=${mandate.referenceNumber}&sig=${signature}`;
   },
 
   /**

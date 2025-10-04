@@ -48,8 +48,8 @@ export class UsersService {
 
   async createDefaultAdmin() {
     try {
-      const defaultAdminEmail = 'admin@mandat.com';
-      const defaultAdminPassword = 'admincimandat20_25';
+      const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@mandat.com';
+      const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admincimandat20_25';
       
       // Vérifier si l'admin par défaut existe déjà
       const existingAdmin = await this.findByEmail(defaultAdminEmail);
@@ -78,7 +78,7 @@ export class UsersService {
       await this.usersRepository.save(adminUser);
       console.log('✅ Compte administrateur par défaut créé avec succès');
       console.log(`📧 Email: ${defaultAdminEmail}`);
-      console.log(`🔑 Mot de passe: ${defaultAdminPassword}`);
+      console.log('🔑 Mot de passe: [CONFIGURÉ DANS LES VARIABLES D\'ENVIRONNEMENT]');
       
     } catch (error) {
       console.error('❌ Erreur lors de la création du compte administrateur par défaut:', error);

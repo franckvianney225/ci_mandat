@@ -1,23 +1,13 @@
 import { MandatesService } from './mandates.service';
-import { MandateStatus } from '../../entities/mandate.entity';
 import { Response } from 'express';
-declare class UpdateMandateDto {
-    status?: MandateStatus;
-    rejectionReason?: string;
-}
-declare class MandateFiltersDto {
-    search?: string;
-    status?: MandateStatus;
-    page?: number;
-    limit?: number;
-}
-declare class RejectMandateDto {
-    reason: string;
-}
+import { CreateMandateDto } from './dto/create-mandate.dto';
+import { UpdateMandateDto } from './dto/update-mandate.dto';
+import { MandateFiltersDto } from './dto/mandate-filters.dto';
+import { RejectMandateDto } from './dto/reject-mandate.dto';
 export declare class MandatesController {
     private readonly mandatesService;
     constructor(mandatesService: MandatesService);
-    create(body: any): Promise<{
+    create(createMandateDto: CreateMandateDto): Promise<{
         success: boolean;
         data: import("../../entities/mandate.entity").Mandate;
         message: string;
@@ -50,4 +40,3 @@ export declare class MandatesController {
     reject(id: string, rejectMandateDto: RejectMandateDto, req: any): Promise<import("../../entities/mandate.entity").Mandate>;
     generatePDF(id: string, res: Response): Promise<void>;
 }
-export {};

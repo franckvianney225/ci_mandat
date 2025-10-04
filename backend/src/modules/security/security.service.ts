@@ -6,7 +6,7 @@ import { Mandate } from '../../entities/mandate.entity';
 @Injectable()
 export class SecurityService {
   private readonly logger = new Logger(SecurityService.name);
-  private readonly secretKey = process.env.SECURITY_SECRET_KEY || 'mandat-secret-key-2025';
+  private readonly secretKey = process.env.PDF_SIGNATURE_SECRET || 'mandat-secret-key-2025';
 
   /**
    * Génère une signature cryptographique pour un mandat

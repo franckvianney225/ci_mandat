@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { apiClient } from "@/lib/api";
 
+interface FieldErrors {
+  [key: string]: string[];
+}
+
 export default function Home() {
   const [formData, setFormData] = useState({
     nom: "",
@@ -14,20 +18,14 @@ export default function Home() {
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const [error, setError] = useState<string | string[] | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setFieldErrors({});
 
     try {
       const response = await apiClient.createMandate(formData);
@@ -37,12 +35,71 @@ export default function Home() {
       } else {
         setError(response.error || "Une erreur est survenue lors de l'envoi du formulaire");
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Erreur lors de l'envoi du formulaire:", err);
-      setError("Erreur de connexion au serveur. Veuillez réessayer.");
+      
+      // Gestion des erreurs de validation détaillées du backend
+      if (err && typeof err === 'object' && 'responseData' in err) {
+        const apiError = err as {
+          responseData?: {
+            message?: string | string[];
+            error?: string;
+            errors?: FieldErrors;
+          }
+        };
+        
+        if (apiError.responseData?.errors) {
+          // Erreurs de validation détaillées par champ (format NestJS ValidationPipe)
+          setFieldErrors(apiError.responseData.errors);
+        } else if (apiError.responseData?.message) {
+          // Message d'erreur général
+          if (Array.isArray(apiError.responseData.message)) {
+            setError(apiError.responseData.message);
+          } else {
+            setError(apiError.responseData.message);
+          }
+        } else if (apiError.responseData?.error) {
+          // Erreur simple
+          setError(apiError.responseData.error);
+        } else {
+          setError("Données invalides. Veuillez vérifier les informations saisies.");
+        }
+      } else if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string' && err.message.includes("400")) {
+        setError("Données invalides. Veuillez vérifier les informations saisies.");
+      } else {
+        setError("Erreur de connexion au serveur. Veuillez réessayer.");
+      }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Effacer l'erreur du champ quand l'utilisateur commence à taper
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const getFieldError = (fieldName: string): string | null => {
+    return fieldErrors[fieldName]?.[0] || null;
+  };
+
+  const getInputClassName = (fieldName: string): string => {
+    const baseClass = "w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 bg-white text-gray-900 transition-colors";
+    if (fieldErrors[fieldName]) {
+      return `${baseClass} border-red-500 focus:border-red-500`;
+    }
+    return `${baseClass} border-gray-300 focus:border-orange-500`;
   };
 
   return (
@@ -59,7 +116,7 @@ export default function Home() {
                   </svg>
                 </div>
                 <h2 className="text-2xl font-bold text-green-800 mb-4">
-                  Merci d&apos;avoir renseigné le formulaire
+                  Merci d'avoir renseigné le formulaire
                 </h2>
                 <p className="text-green-700 text-lg">
                   Votre demande a bien été transmise et sera traitée dans les plus brefs délais
@@ -93,9 +150,12 @@ export default function Home() {
                       value={formData.nom}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 transition-colors"
+                      className={getInputClassName("nom")}
                       placeholder="Entrez votre nom"
                     />
+                    {getFieldError("nom") && (
+                      <p className="mt-1 text-sm text-red-600">{getFieldError("nom")}</p>
+                    )}
                   </div>
 
                   {/* Prénom */}
@@ -110,9 +170,12 @@ export default function Home() {
                       value={formData.prenom}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 transition-colors"
+                      className={getInputClassName("prenom")}
                       placeholder="Entrez votre prénom"
                     />
+                    {getFieldError("prenom") && (
+                      <p className="mt-1 text-sm text-red-600">{getFieldError("prenom")}</p>
+                    )}
                   </div>
 
                   {/* Email */}
@@ -127,9 +190,12 @@ export default function Home() {
                       value={formData.email}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 transition-colors"
+                      className={getInputClassName("email")}
                       placeholder="exemple@email.com"
                     />
+                    {getFieldError("email") && (
+                      <p className="mt-1 text-sm text-red-600">{getFieldError("email")}</p>
+                    )}
                   </div>
 
                   {/* Fonction */}
@@ -144,9 +210,12 @@ export default function Home() {
                       value={formData.fonction}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 transition-colors"
+                      className={getInputClassName("fonction")}
                       placeholder="Entrez votre fonction"
                     />
+                    {getFieldError("fonction") && (
+                      <p className="mt-1 text-sm text-red-600">{getFieldError("fonction")}</p>
+                    )}
                   </div>
 
                   {/* Téléphone */}
@@ -161,9 +230,12 @@ export default function Home() {
                       value={formData.telephone}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 transition-colors"
+                      className={getInputClassName("telephone")}
                       placeholder="Entrez votre numero de téléphone"
                     />
+                    {getFieldError("telephone") && (
+                      <p className="mt-1 text-sm text-red-600">{getFieldError("telephone")}</p>
+                    )}
                   </div>
 
                   {/* Circonscription */}
@@ -177,7 +249,7 @@ export default function Home() {
                       value={formData.circonscription}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white text-gray-900 transition-colors"
+                      className={getInputClassName("circonscription")}
                     >
                       <option value="">Sélectionnez une circonscription</option>
                       <option value="Abidjan-Plateau">Abidjan-Plateau</option>
@@ -242,12 +314,26 @@ export default function Home() {
                       <option value="Yamoussoukro">Yamoussoukro</option>
                       <option value="Zuénoula">Zuénoula</option>
                     </select>
+                    {getFieldError("circonscription") && (
+                      <p className="mt-1 text-sm text-red-600">{getFieldError("circonscription")}</p>
+                    )}
                   </div>
 
-                  {/* Message d'erreur */}
+                  {/* Message d'erreur général */}
                   {error && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <p className="text-red-700 text-sm">{error}</p>
+                      {Array.isArray(error) ? (
+                        <ul className="text-red-700 text-sm space-y-1">
+                          {error.map((err, index) => (
+                            <li key={index} className="flex items-start">
+                              <span className="mr-2">•</span>
+                              <span>{err}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-red-700 text-sm">{error}</p>
+                      )}
                     </div>
                   )}
 
