@@ -15,6 +15,11 @@ declare class ChangePasswordDto {
     currentPassword: string;
     newPassword: string;
 }
+declare class UpdateProfileDto {
+    firstName: string;
+    lastName: string;
+    phone?: string;
+}
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
@@ -24,6 +29,7 @@ export declare class AuthController {
     changePassword(req: any, changePasswordDto: ChangePasswordDto): Promise<{
         message: string;
     }>;
+    updateProfile(req: any, updateProfileDto: UpdateProfileDto): Promise<import("../../entities/user.entity").User>;
     logout(): Promise<{
         message: string;
     }>;

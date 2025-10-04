@@ -189,4 +189,29 @@ export class AuthService {
 
     await this.usersRepository.save(user);
   }
+
+  async updateProfile(
+    userId: string,
+    profileData: {
+      firstName: string;
+      lastName: string;
+      phone?: string;
+    },
+  ): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new UnauthorizedException('Utilisateur non trouvé');
+    }
+
+    // Mettre à jour les données personnelles
+    user.personalData = {
+      ...user.personalData,
+      firstName: profileData.firstName,
+      lastName: profileData.lastName,
+      phone: profileData.phone,
+    };
+
+    return await this.usersRepository.save(user);
+  }
 }

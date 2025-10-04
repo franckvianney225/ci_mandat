@@ -7,6 +7,7 @@ import Dashboard from "@/components/admin/Dashboard";
 import RequestsManagement from "@/components/admin/RequestsManagement";
 import UsersManagement from "@/components/admin/UsersManagement";
 import Settings from "@/components/admin/Settings";
+import Profile from "@/components/admin/Profile";
 import { apiClient } from "@/lib/api";
 
 interface User {
@@ -74,6 +75,8 @@ export default function AdminDashboard() {
         return <UsersManagement />;
       case "settings":
         return <Settings />;
+      case "profile":
+        return <Profile currentUser={currentUser} />;
       default:
         return <Dashboard onSectionChange={setActiveSection} />;
     }
@@ -89,6 +92,8 @@ export default function AdminDashboard() {
         return "Gestion des Utilisateurs";
       case "settings":
         return "Paramètres";
+      case "profile":
+        return "Mon Profil";
       default:
         return "Tableau de Bord";
     }
@@ -104,6 +109,8 @@ export default function AdminDashboard() {
         return "Gérer les comptes utilisateurs";
       case "settings":
         return "Configurer l'application";
+      case "profile":
+        return "Gérez vos informations personnelles";
       default:
         return "Vue d'ensemble des demandes";
     }

@@ -8,6 +8,7 @@ import {
   HttpCode,
   HttpStatus,
   UnauthorizedException,
+  Patch,
 } from '@nestjs/common';
 import { AuthService, LoginResponse } from './auth.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -40,6 +41,12 @@ class RegisterDto {
 class ChangePasswordDto {
   currentPassword: string;
   newPassword: string;
+}
+
+class UpdateProfileDto {
+  firstName: string;
+  lastName: string;
+  phone?: string;
 }
 
 @Controller('auth')
@@ -101,6 +108,19 @@ export class AuthController {
     );
     
     return { message: 'Mot de passe modifié avec succès' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('profile')
+  @HttpCode(HttpStatus.OK)
+  async updateProfile(
+    @Request() req,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
+    return this.authService.updateProfile(
+      req.user.id,
+      updateProfileDto,
+    );
   }
 
   @UseGuards(JwtAuthGuard)

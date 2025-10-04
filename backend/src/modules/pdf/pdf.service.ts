@@ -10,6 +10,36 @@ export class PdfService {
   constructor(private securityService: SecurityService) {}
 
   /**
+   * Ajoute un filigrane de sécurité OFFICIEL répété sur toute la page
+   */
+  private addSecurityWatermark(doc: jsPDF, pageWidth: number, pageHeight: number): void {
+    // Configuration du filigrane
+    doc.setTextColor(245, 245, 245); // Gris très clair
+    doc.setFontSize(36);
+    doc.setFont('helvetica', 'bold');
+
+    // Texte du filigrane
+    const watermarkText = 'OFFICIEL';
+
+    // Rotation et positionnement diagonal
+    const angle = -45;
+
+    // Espacement très serré pour couverture maximale PARTOUT
+    const stepX = 60;
+    const stepY = 45;
+
+    // Créer un pattern ultra-dense répété sur TOUTE la page
+    for (let x = -20; x < pageWidth + 20; x += stepX) {
+      for (let y = -20; y < pageHeight + 20; y += stepY) {
+        doc.text(watermarkText, x, y, {
+          angle: angle,
+          align: 'left'
+        });
+      }
+    }
+  }
+
+  /**
    * Génère un PDF de mandat avec QR code de vérification
    */
   async generateMandatePDF(mandate: Mandate): Promise<{ pdfBuffer: Buffer; fileName: string }> {
@@ -19,6 +49,9 @@ export class PdfService {
       const doc = new jsPDF('portrait', 'mm', 'a4');
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Ajouter le filigrane de sécurité OFFICIEL répété partout
+      this.addSecurityWatermark(doc, pageWidth, pageHeight);
 
       // Générer le QR code
       const qrCodeBuffer = await this.securityService.generateQRCodeBuffer(mandate);

@@ -33,4 +33,9 @@ export declare class AuthService {
     }, role?: UserRole): Promise<User>;
     validateToken(userId: string): Promise<User>;
     changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void>;
+    updateProfile(userId: string, profileData: {
+        firstName: string;
+        lastName: string;
+        phone?: string;
+    }): Promise<User>;
 }

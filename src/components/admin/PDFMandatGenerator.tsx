@@ -136,6 +136,40 @@ const SecurityUtils = {
   async generateVerificationUrl(mandate: MandateData, baseUrl: string = 'http://localhost:3000'): Promise<string> {
     const signature = await this.generateSignature(mandate);
     return `${baseUrl}/verification?ref=${mandate.referenceNumber}&sig=${signature}`;
+  },
+
+  /**
+   * Ajoute un filigrane de sécurité en arrière-plan (répété sur toute la page)
+   */
+  addSecurityWatermark(doc: jsPDF, pageWidth: number, pageHeight: number): void {
+    doc.saveGraphicsState();
+
+    // Configuration du filigrane
+    doc.setTextColor(245, 245, 245); // Gris très clair
+    doc.setFontSize(36);
+    doc.setFont('helvetica', 'bold');
+
+    // Texte du filigrane (juste OFFICIEL comme demandé)
+    const watermarkText = 'OFFICIEL';
+
+    // Rotation et positionnement diagonal
+    const angle = -45;
+
+    // Espacement très serré pour couverture maximale PARTOUT
+    const stepX = 60;
+    const stepY = 45;
+
+    // Créer un pattern ultra-dense répété sur TOUTE la page
+    for (let x = -20; x < pageWidth + 20; x += stepX) {
+      for (let y = -20; y < pageHeight + 20; y += stepY) {
+        doc.text(watermarkText, x, y, {
+          angle: angle,
+          align: 'left'
+        });
+      }
+    }
+
+    doc.restoreGraphicsState();
   }
 };
 
@@ -161,6 +195,9 @@ const PDFMandatGenerator = forwardRef(({
     const doc = new jsPDF('portrait', 'mm', 'a4');
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
+
+    // Ajouter le filigrane de sécurité
+    SecurityUtils.addSecurityWatermark(doc, pageWidth, pageHeight);
 
     // Générer le QR code de manière sécurisée (même logique que le backend)
     const generateQRCode = async (): Promise<string> => {

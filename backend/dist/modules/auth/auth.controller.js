@@ -33,6 +33,8 @@ class RegisterDto {
 }
 class ChangePasswordDto {
 }
+class UpdateProfileDto {
+}
 let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
@@ -63,6 +65,9 @@ let AuthController = class AuthController {
     async changePassword(req, changePasswordDto) {
         await this.authService.changePassword(req.user.id, changePasswordDto.currentPassword, changePasswordDto.newPassword);
         return { message: 'Mot de passe modifié avec succès' };
+    }
+    async updateProfile(req, updateProfileDto) {
+        return this.authService.updateProfile(req.user.id, updateProfileDto);
     }
     async logout() {
         return { message: 'Déconnexion réussie' };
@@ -102,6 +107,16 @@ __decorate([
     __metadata("design:paramtypes", [Object, ChangePasswordDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "changePassword", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Patch)('profile'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, UpdateProfileDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "updateProfile", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Post)('logout'),

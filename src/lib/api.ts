@@ -234,6 +234,17 @@ class ApiClient {
     return this.request('/auth/profile');
   }
 
+  async updateProfile(profileData: {
+    firstName: string;
+    lastName: string;
+    phone?: string;
+  }): Promise<ApiResponse> {
+    return this.request('/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(profileData),
+    });
+  }
+
   // Dashboard API
   async getDashboardStats(): Promise<ApiResponse<DashboardStats>> {
     return this.request('/dashboard/stats');

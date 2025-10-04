@@ -128,6 +128,19 @@ let AuthService = class AuthService {
         user.passwordHash = await bcrypt.hash(newPassword, saltRounds);
         await this.usersRepository.save(user);
     }
+    async updateProfile(userId, profileData) {
+        const user = await this.usersRepository.findOne({ where: { id: userId } });
+        if (!user) {
+            throw new common_1.UnauthorizedException('Utilisateur non trouvé');
+        }
+        user.personalData = {
+            ...user.personalData,
+            firstName: profileData.firstName,
+            lastName: profileData.lastName,
+            phone: profileData.phone,
+        };
+        return await this.usersRepository.save(user);
+    }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
