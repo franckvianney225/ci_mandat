@@ -1,6 +1,6 @@
 // Web Worker pour la génération PDF non bloquante
 import { jsPDF } from 'jspdf';
-import QRCode from 'qrcode';
+import * as QRCode from 'qrcode';
 
 interface MandateData {
   id: string;
@@ -36,12 +36,12 @@ const SecurityUtils = {
 
     return {
       ...mandate,
-      nom: this.sanitizeText(mandate.nom),
-      prenom: this.sanitizeText(mandate.prenom),
-      email: this.sanitizeText(mandate.email),
-      telephone: this.sanitizeText(mandate.telephone),
-      circonscription: this.sanitizeText(mandate.circonscription),
-      referenceNumber: this.validateReferenceNumber(mandate.referenceNumber)
+      nom: SecurityUtils.sanitizeText(mandate.nom),
+      prenom: SecurityUtils.sanitizeText(mandate.prenom),
+      email: SecurityUtils.sanitizeText(mandate.email),
+      telephone: SecurityUtils.sanitizeText(mandate.telephone),
+      circonscription: SecurityUtils.sanitizeText(mandate.circonscription),
+      referenceNumber: SecurityUtils.validateReferenceNumber(mandate.referenceNumber)
     };
   },
 
@@ -77,8 +77,6 @@ const SecurityUtils = {
   },
 
   addSecurityWatermark(doc: jsPDF, pageWidth: number, pageHeight: number): void {
-    doc.saveGraphicsState();
-
     // Configuration du filigrane
     doc.setTextColor(245, 245, 245);
     doc.setFontSize(36);
@@ -98,8 +96,6 @@ const SecurityUtils = {
         });
       }
     }
-
-    doc.restoreGraphicsState();
   }
 };
 
@@ -119,7 +115,7 @@ async function generatePDF(mandate: MandateData): Promise<{ pdfBlob: Blob; fileN
   const generateQRCode = async (): Promise<string> => {
     try {
       // Pour le worker, on génère une URL de vérification simple
-      const verificationUrl = `${self.location.origin}/verification?ref=${secureMandate.referenceNumber}`;
+      const verificationUrl = `${typeof self !== 'undefined' && self.location ? self.location.origin : ''}/verification?ref=${secureMandate.referenceNumber}`;
       
       const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
         width: 150,
@@ -227,7 +223,7 @@ async function generatePDF(mandate: MandateData): Promise<{ pdfBlob: Blob; fileN
   doc.setFont('helvetica', 'bold');
   doc.text('ALLASSANE OUATTARA', leftMargin, yPos);
   doc.setFont('helvetica', 'normal');
-  doc.text(' candidat à l\'élection présidentielle du 25 octobre 2025,', leftMargin + doc.getTextWidth('ALLASSANE OUATTARA '), yPos);
+  doc.text(' candidat à l\'élection présidentielle du 25 octobre 2025,', leftMargin + (doc.getStringUnitWidth('ALLASSANE OUATTARA ') * doc.getFontSize() / doc.internal.scaleFactor), yPos);
   yPos += lineHeight * 2;
 
   // Paragraphe 3
@@ -245,9 +241,9 @@ async function generatePDF(mandate: MandateData): Promise<{ pdfBlob: Blob; fileN
   // Paragraphe 6
   doc.text('de la circonscription électorale d\'', leftMargin, yPos);
   doc.setFont('helvetica', 'bold');
-  doc.text(secureMandate.circonscription, leftMargin + doc.getTextWidth('de la circonscription électorale d\''), yPos);
+  doc.text(secureMandate.circonscription, leftMargin + (doc.getStringUnitWidth('de la circonscription électorale d\'') * doc.getFontSize() / doc.internal.scaleFactor), yPos);
   doc.setFont('helvetica', 'normal');
-  doc.text('.', leftMargin + doc.getTextWidth('de la circonscription électorale d\'' + secureMandate.circonscription), yPos);
+  doc.text('.', leftMargin + (doc.getStringUnitWidth('de la circonscription électorale d\'' + secureMandate.circonscription) * doc.getFontSize() / doc.internal.scaleFactor), yPos);
   yPos += lineHeight * 2;
 
   // Paragraphe 7
@@ -255,9 +251,9 @@ async function generatePDF(mandate: MandateData): Promise<{ pdfBlob: Blob; fileN
   yPos += lineHeight;
   doc.text('les intérêts du Candidat ', leftMargin, yPos);
   doc.setFont('helvetica', 'bold');
-  doc.text(`${secureMandate.prenom} ${secureMandate.nom}`, leftMargin + doc.getTextWidth('les intérêts du Candidat '), yPos);
+  doc.text(`${secureMandate.prenom} ${secureMandate.nom}`, leftMargin + (doc.getStringUnitWidth('les intérêts du Candidat ') * doc.getFontSize() / doc.internal.scaleFactor), yPos);
   doc.setFont('helvetica', 'normal');
-  doc.text(' et en valoir ce que de droit.', leftMargin + doc.getTextWidth('les intérêts du Candidat ' + secureMandate.prenom + ' ' + secureMandate.nom), yPos);
+  doc.text(' et en valoir ce que de droit.', leftMargin + (doc.getStringUnitWidth('les intérêts du Candidat ' + secureMandate.prenom + ' ' + secureMandate.nom) * doc.getFontSize() / doc.internal.scaleFactor), yPos);
   
   yPos += lineHeight * 3;
 
@@ -291,7 +287,7 @@ async function generatePDF(mandate: MandateData): Promise<{ pdfBlob: Blob; fileN
     doc.setFontSize(6);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text('Scanner pour vérifier', qrCodeX, qrCodeY + qrCodeHeight + 5, { align: 'center' });
+    doc.text('Scanner pour vérifier', qrCodeX + qrCodeWidth / 2, qrCodeY + qrCodeHeight + 5, { align: 'center' });
     doc.text('l\'authenticité', qrCodeX + qrCodeWidth / 2, qrCodeY + qrCodeHeight + 8, { align: 'center' });
   }
 
@@ -302,7 +298,7 @@ async function generatePDF(mandate: MandateData): Promise<{ pdfBlob: Blob; fileN
   doc.text(`Référence: ${secureMandate.referenceNumber}`, 20, pageHeight - 10);
 
   // Convertir en Blob
-  const pdfBlob = doc.output('blob');
+  const pdfBlob = new Blob([doc.output('arraybuffer')], { type: 'application/pdf' });
   const fileName = SecurityUtils.generateSecureFileName(secureMandate.referenceNumber);
 
   return { pdfBlob, fileName };
@@ -338,5 +334,11 @@ self.addEventListener('message', async (event: MessageEvent<{ type: 'generate'; 
   }
 });
 
-// Type pour TypeScript
+// Types pour TypeScript
+interface WorkerGlobalScope extends WindowOrWorkerGlobalScope {
+  location: Location;
+  postMessage(message: any, transfer?: Transferable[]): void;
+  addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+}
+
 declare const self: WorkerGlobalScope & typeof globalThis;

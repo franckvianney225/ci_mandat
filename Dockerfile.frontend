@@ -1,10 +1,10 @@
-# Dockerfile pour le Frontend Next.js CI-Mandat
+# Dockerfile pour le Frontend Next.js CI-Mandat - Version Améliorée
 FROM node:18-alpine AS builder
 
 # Définir le répertoire de travail
 WORKDIR /app
 
-# Copier les fichiers de configuration
+# Copier les fichiers de configuration package.json d'abord (optimisation des layers)
 COPY package*.json ./
 COPY next.config.ts ./
 COPY tsconfig.json ./
@@ -24,24 +24,21 @@ RUN npm run build
 # Image de production
 FROM node:18-alpine AS runner
 
-# Installer les dépendances système nécessaires
+# Installer curl pour les health checks
 RUN apk add --no-cache curl
 
 # Créer un utilisateur non-root pour la sécurité
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
 WORKDIR /app
 
 # Copier les fichiers de build depuis l'étape builder
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/next.config.ts ./
-
-# Changer les propriétaires des fichiers pour l'utilisateur nextjs
-RUN chown -R nextjs:nodejs /app
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/next.config.ts ./
 
 # Basculer vers l'utilisateur non-root
 USER nextjs
@@ -49,14 +46,14 @@ USER nextjs
 # Exposer le port
 EXPOSE 3000
 
-# Variable d'environnement pour Next.js
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-ENV NODE_ENV production
+# Variables d'environnement pour Next.js
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+ENV NODE_ENV=production
 
-# Health check
+# Health check corrigé (pas d'endpoint /api/health dans Next.js)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
+  CMD curl -f http://localhost:3000 || exit 1
 
 # Commande de démarrage
 CMD ["npm", "start"]

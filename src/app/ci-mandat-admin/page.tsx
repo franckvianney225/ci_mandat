@@ -152,7 +152,7 @@ export default function AdminLogin() {
         </div>
 
         {/* Informations de test */}
-        <div className="text-center">
+        {/* <div className="text-center">
           <details className="text-xs text-gray-500">
             <summary className="cursor-pointer">Informations de test</summary>
             <div className="mt-2 p-3 bg-gray-100 rounded-lg">
@@ -160,7 +160,7 @@ export default function AdminLogin() {
               <p><strong>Mot de passe:</strong> admincimandat20_25</p>
             </div>
           </details>
-        </div>
+        </div> */}
       </div>
     </div>
   );

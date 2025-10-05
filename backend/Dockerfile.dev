@@ -1,0 +1,21 @@
+# Dockerfile de développement pour le Backend NestJS
+FROM node:18-alpine
+
+# Définir le répertoire de travail
+WORKDIR /app
+
+# Copier les fichiers de configuration
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Installer toutes les dépendances
+RUN npm ci
+
+# Copier le code source
+COPY src/ ./src/
+
+# Exposer le port
+EXPOSE 3001
+
+# Commande de développement avec hot reload
+CMD ["npm", "run", "start:dev"]
