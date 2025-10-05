@@ -168,8 +168,3 @@ volumes:
 networks:
   ci_mandat_network_prod:
     driver: bridge
-    # Configuration de sécurité du réseau
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.20.0.0/16

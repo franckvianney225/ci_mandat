@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  JoinColumn,
   Index,
   BeforeInsert,
 } from 'typeorm';
@@ -27,22 +28,16 @@ export class Mandate {
 
   @ManyToOne(() => User, (user) => user.mandates, { nullable: true })
   @Index()
+  @JoinColumn({ name: 'client_id' })
   client: User;
 
-  @Column({ nullable: true })
-  clientId: string;
-
   @ManyToOne(() => User, (user) => user.approvedMandatesAsAdmin, { nullable: true })
+  @JoinColumn({ name: 'admin_approver_id' })
   adminApprover: User;
 
-  @Column({ nullable: true })
-  adminApproverId: string;
-
   @ManyToOne(() => User, (user) => user.approvedMandatesAsSuperAdmin, { nullable: true })
+  @JoinColumn({ name: 'super_admin_approver_id' })
   superAdminApprover: User;
-
-  @Column({ nullable: true })
-  superAdminApproverId: string;
 
   @Column({ type: 'varchar', length: 255 })
   title: string;
@@ -50,11 +45,11 @@ export class Mandate {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ type: 'varchar', length: 50, unique: true })
+  @Column({ type: 'varchar', length: 50, unique: true, name: 'reference_number' })
   @Index()
   referenceNumber: string;
 
-  @Column({ type: 'jsonb' })
+  @Column({ type: 'jsonb', name: 'form_data' })
   formData: {
     // Données flexibles du formulaire
     nom: string;
@@ -75,35 +70,35 @@ export class Mandate {
   @Index()
   status: MandateStatus;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true, name: 'admin_approved_at' })
   adminApprovedAt: Date;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true, name: 'super_admin_approved_at' })
   superAdminApprovedAt: Date;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true, name: 'rejected_at' })
   rejectedAt: Date;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true, name: 'rejection_reason' })
   rejectionReason: string;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: false, name: 'pdf_generated' })
   pdfGenerated: boolean;
 
-  @Column({ type: 'varchar', length: 500, nullable: true })
+  @Column({ type: 'varchar', length: 500, nullable: true, name: 'pdf_url' })
   pdfUrl: string;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true, name: 'pdf_generated_at' })
   pdfGeneratedAt: Date;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   @Index()
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true, name: 'expires_at' })
   expiresAt: Date;
 
   @BeforeInsert()

@@ -1,6 +1,17 @@
 # Dockerfile pour le Backend NestJS CI-Mandat - Version Améliorée
 FROM node:18-alpine AS builder
 
+# Installer les outils de build pour les modules natifs (bcrypt)
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++
+
+# Définir les variables d'environnement pour Puppeteer AVANT l'installation
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
+    CHROMIUM_PATH=/usr/bin/chromium-browser
+
 # Définir le répertoire de travail
 WORKDIR /app
 
@@ -13,6 +24,7 @@ RUN npm ci
 
 # Copier le code source
 COPY src/ ./src/
+COPY puppeteer-config.js ./
 
 # Build de l'application
 RUN npm run build

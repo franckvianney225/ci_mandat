@@ -167,7 +167,6 @@ export class MandatesService {
       });
       if (adminApprover) {
         mandate.adminApprover = adminApprover;
-        mandate.adminApproverId = adminApprover.id;
       }
     }
 
@@ -177,7 +176,6 @@ export class MandatesService {
       });
       if (superAdminApprover) {
         mandate.superAdminApprover = superAdminApprover;
-        mandate.superAdminApproverId = superAdminApprover.id;
       }
     }
 
@@ -194,9 +192,14 @@ export class MandatesService {
     mandate.status = MandateStatus.ADMIN_APPROVED;
     mandate.adminApprovedAt = new Date();
     
-    // Ne définir adminApproverId que si adminId est fourni
+    // Ne définir adminApprover que si adminId est fourni
     if (adminId) {
-      mandate.adminApproverId = adminId;
+      const adminApprover = await this.usersRepository.findOne({
+        where: { id: adminId },
+      });
+      if (adminApprover) {
+        mandate.adminApprover = adminApprover;
+      }
     }
 
     const savedMandate = await this.mandatesRepository.save(mandate);
@@ -216,7 +219,13 @@ export class MandatesService {
 
     mandate.status = MandateStatus.SUPER_ADMIN_APPROVED;
     mandate.superAdminApprovedAt = new Date();
-    mandate.superAdminApproverId = superAdminId;
+    
+    const superAdminApprover = await this.usersRepository.findOne({
+      where: { id: superAdminId },
+    });
+    if (superAdminApprover) {
+      mandate.superAdminApprover = superAdminApprover;
+    }
 
     const savedMandate = await this.mandatesRepository.save(mandate);
     
@@ -238,7 +247,12 @@ export class MandatesService {
     mandate.rejectionReason = reason;
 
     if (adminId) {
-      mandate.adminApproverId = adminId;
+      const adminApprover = await this.usersRepository.findOne({
+        where: { id: adminId },
+      });
+      if (adminApprover) {
+        mandate.adminApprover = adminApprover;
+      }
     }
 
     const savedMandate = await this.mandatesRepository.save(mandate);

@@ -17,6 +17,11 @@ COMPOSE_FILE="docker-compose.production.yml"
 ENV_FILE=".env.production"
 PROJECT_NAME="ci_mandat_prod"
 
+# Charger les variables d'environnement
+if [ -f "$ENV_FILE" ]; then
+    export $(grep -v '^#' "$ENV_FILE" | xargs)
+fi
+
 # Fonctions d'affichage
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -107,9 +112,9 @@ build_images() {
     log_info "Construction des images Docker..."
     
     if command -v docker-compose &> /dev/null; then
-        docker-compose -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" build --no-cache
+        docker-compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" build --no-cache
     else
-        docker compose -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" build --no-cache
+        docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" build --no-cache
     fi
     
     log_success "Images construites avec succès"
@@ -120,9 +125,9 @@ start_services() {
     log_info "Démarrage des services..."
     
     if command -v docker-compose &> /dev/null; then
-        docker-compose -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" up -d
+        docker-compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" up -d
     else
-        docker compose -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" up -d
+        docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" up -d
     fi
     
     log_success "Services démarrés"
@@ -146,9 +151,9 @@ restart_services() {
     log_info "Redémarrage des services..."
     
     if command -v docker-compose &> /dev/null; then
-        docker-compose -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" restart
+        docker-compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" restart
     else
-        docker compose -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" restart
+        docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" restart
     fi
     
     log_success "Services redémarrés"
@@ -159,9 +164,9 @@ show_logs() {
     log_info "Affichage des logs..."
     
     if command -v docker-compose &> /dev/null; then
-        docker-compose -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" logs -f
+        docker-compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" logs -f
     else
-        docker compose -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" logs -f
+        docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" logs -f
     fi
 }
 
@@ -170,9 +175,9 @@ check_status() {
     log_info "Vérification de l'état des services..."
     
     if command -v docker-compose &> /dev/null; then
-        docker-compose -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" ps
+        docker-compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" ps
     else
-        docker compose -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" ps
+        docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" --project-name "$PROJECT_NAME" ps
     fi
     
     echo ""
@@ -180,6 +185,16 @@ check_status() {
     log_info "  Frontend: ${FRONTEND_URL}"
     log_info "  Backend:  ${BACKEND_URL}"
     log_info "  API Docs: ${BACKEND_URL}/api/docs"
+}
+
+# Nettoyage des réseaux Docker
+cleanup_networks() {
+    log_info "Nettoyage des réseaux Docker inutilisés..."
+    
+    # Supprimer les réseaux Docker inutilisés
+    docker network prune -f
+    
+    log_success "Nettoyage des réseaux terminé"
 }
 
 # Nettoyage
@@ -263,6 +278,9 @@ case "${1:-}" in
         ;;
     --cleanup)
         cleanup
+        ;;
+    --cleanup-networks)
+        cleanup_networks
         ;;
     --help)
         show_help

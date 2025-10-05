@@ -60,7 +60,7 @@ export class AuthController {
   async login(
     @Body() body: any,
     @Res({ passthrough: true }) res: Response // Injecter la réponse
-  ): Promise<{ user: any }> { // Retirer access_token du retour
+  ): Promise<{ user: any; access_token: string }> { // Retourner user et token
     console.log('📨 Corps de la requête brute:', body);
     console.log('🔍 Type de body:', typeof body);
     console.log('🔍 Clés de body:', Object.keys(body));
@@ -82,17 +82,20 @@ export class AuthController {
     
     const loginResponse = await this.authService.login(email, password);
     
-    // Définir le cookie HttpOnly sécurisé
+    // Définir le cookie HttpOnly sécurisé (optionnel pour compatibilité)
     res.cookie('adminToken', loginResponse.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // HTTPS en production
-      sameSite: 'strict',
+      secure: false, // Désactiver secure pour HTTP
+      sameSite: 'lax', // Plus permissif que strict
       maxAge: 24 * 60 * 60 * 1000, // 24 heures
       path: '/',
     });
     
-    // Retourner seulement les infos utilisateur
-    return { user: loginResponse.user };
+    // Retourner les infos utilisateur ET le token pour le frontend
+    return {
+      user: loginResponse.user,
+      access_token: loginResponse.access_token
+    };
   }
 
   @Post('register')

@@ -32,7 +32,7 @@ export class User {
   @Index()
   email: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 255, name: 'password_hash' })
   @Exclude()
   passwordHash: string;
 
@@ -52,7 +52,7 @@ export class User {
   @Index()
   status: UserStatus;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'jsonb', nullable: true, name: 'personal_data' })
   personalData: {
     firstName: string;
     lastName: string;
@@ -60,14 +60,14 @@ export class User {
     department?: string;
   };
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   @Index()
   createdAt: string;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true, name: 'last_login' })
   lastLogin: string;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ type: 'int', default: 0, name: 'login_attempts' })
   loginAttempts: number;
 
   // Relations avec les mandats

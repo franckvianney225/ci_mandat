@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 interface VerificationResult {
@@ -22,7 +22,7 @@ interface VerificationResult {
   message: string;
 }
 
-export default function VerificationPage() {
+function VerificationContent() {
   const searchParams = useSearchParams();
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -173,5 +173,21 @@ export default function VerificationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerificationPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-800">Chargement...</h2>
+          <p className="text-gray-600 mt-2">Veuillez patienter.</p>
+        </div>
+      </div>
+    }>
+      <VerificationContent />
+    </Suspense>
   );
 }
