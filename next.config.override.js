@@ -11,11 +11,12 @@ const nextConfig = {
   // Configuration de sécurité
   poweredByHeader: false,
   // Configuration pour Docker
-  output: 'standalone',
+  // output: 'standalone', // Désactivé temporairement pour résoudre les problèmes de chunks
   // Variables d'environnement
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://164.160.40.182:3001/api/v1',
     NEXT_PUBLIC_FRONTEND_URL: process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://164.160.40.182:3000',
+    NEXT_PUBLIC_RECAPTCHA_SITE_KEY: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI',
   },
   // Configuration des images (si utilisées)
   images: {

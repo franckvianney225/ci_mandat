@@ -15,9 +15,7 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
   synchronize: configService.get<string>('NODE_ENV') === 'development',
   logging: configService.get<string>('NODE_ENV') === 'development',
   extra: {
-    ssl: configService.get<string>('NODE_ENV') === 'production' 
-      ? { rejectUnauthorized: false } 
-      : false,
+    ssl: false, // Désactivé car PostgreSQL ne supporte pas SSL
   },
   // Configuration de sécurité
   maxQueryExecutionTime: 1000, // 1 seconde max par requête

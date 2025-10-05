@@ -50,12 +50,12 @@ import { RolesGuard } from './common/guards/roles.guard';
         ENCRYPTION_KEY: Joi.string().required().length(64),
         DATA_ENCRYPTION_IV: Joi.string().required().length(32),
 
-        // Email
-        SMTP_HOST: Joi.string().required(),
-        SMTP_PORT: Joi.number().required(),
-        SMTP_USER: Joi.string().required(),
-        SMTP_PASS: Joi.string().required(),
-        EMAIL_FROM: Joi.string().email().required(),
+        // Email (optionnel - peut être désactivé)
+        SMTP_HOST: Joi.string().optional(),
+        SMTP_PORT: Joi.number().optional(),
+        SMTP_USER: Joi.string().optional(),
+        SMTP_PASS: Joi.string().optional(),
+        EMAIL_FROM: Joi.string().email().optional(),
 
         // Sécurité
         ALLOWED_ORIGINS: Joi.string().default('http://localhost:3000'),

@@ -1,53 +1,25 @@
 #!/bin/bash
 
-# Script de build forcé pour Next.js
-echo "Démarrage du build forcé Next.js..."
+# Script pour reconstruire le frontend avec les variables d'environnement actuelles
 
-# Désactiver les vérifications qui bloquent le build
-export NEXT_TELEMETRY_DISABLED=1
-export DISABLE_ESLINT_PLUGIN=true
-export TSC_COMPILE_ON_ERROR=true
+echo "🔨 Reconstruction du frontend CI-Mandat..."
 
-# Essayer le build normal d'abord
-echo "Tentative de build normal..."
-npm run build
+# Arrêter et supprimer le conteneur frontend existant
+docker stop ci_mandat_frontend_prod 2>/dev/null || true
+docker rm ci_mandat_frontend_prod 2>/dev/null || true
 
-# Si le build échoue, essayer avec des options de contournement
-if [ $? -ne 0 ]; then
-    echo "Build normal échoué, tentative avec contournement des erreurs..."
-    
-    # Créer un fichier next.config.js temporaire pour désactiver les vérifications
-    cat > next.config.override.js << 'EOF'
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  experimental: {
-    esmExternals: 'loose'
-  }
-}
+# Reconstruire l'image frontend sans cache
+echo "📦 Construction de l'image frontend (sans cache)..."
+docker build --no-cache -f Dockerfile.frontend -t ci_mandat_frontend:latest .
 
-module.exports = nextConfig
-EOF
-    
-    # Utiliser la configuration temporaire
-    NEXT_TELEMETRY_DISABLED=1 npx next build --config next.config.override.js
-    
-    # Nettoyer
-    rm -f next.config.override.js
-    
-    if [ $? -eq 0 ]; then
-        echo "Build réussi avec contournement des erreurs"
-        exit 0
-    else
-        echo "Échec du build même avec contournement"
-        exit 1
-    fi
-else
-    echo "Build réussi normalement"
-    exit 0
-fi
+# Démarrer le nouveau conteneur
+echo "🚀 Démarrage du nouveau conteneur frontend..."
+docker run -d \
+  --name ci_mandat_frontend_prod \
+  --network ci_mandat_network \
+  -p 3000:3000 \
+  --env-file .env.production \
+  ci_mandat_frontend:latest
+
+echo "✅ Frontend reconstruit et redémarré avec succès!"
+echo "🌐 Application disponible sur: http://164.160.40.182:3000"
