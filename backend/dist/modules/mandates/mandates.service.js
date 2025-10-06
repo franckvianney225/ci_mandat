@@ -123,7 +123,6 @@ let MandatesService = MandatesService_1 = class MandatesService {
             });
             if (adminApprover) {
                 mandate.adminApprover = adminApprover;
-                mandate.adminApproverId = adminApprover.id;
             }
         }
         if (updateMandateDto.superAdminApproverId) {
@@ -132,7 +131,6 @@ let MandatesService = MandatesService_1 = class MandatesService {
             });
             if (superAdminApprover) {
                 mandate.superAdminApprover = superAdminApprover;
-                mandate.superAdminApproverId = superAdminApprover.id;
             }
         }
         return await this.mandatesRepository.save(mandate);
@@ -145,7 +143,12 @@ let MandatesService = MandatesService_1 = class MandatesService {
         mandate.status = mandate_entity_1.MandateStatus.ADMIN_APPROVED;
         mandate.adminApprovedAt = new Date();
         if (adminId) {
-            mandate.adminApproverId = adminId;
+            const adminApprover = await this.usersRepository.findOne({
+                where: { id: adminId },
+            });
+            if (adminApprover) {
+                mandate.adminApprover = adminApprover;
+            }
         }
         const savedMandate = await this.mandatesRepository.save(mandate);
         await this.sendMandateApprovedEmail(savedMandate);
@@ -158,7 +161,12 @@ let MandatesService = MandatesService_1 = class MandatesService {
         }
         mandate.status = mandate_entity_1.MandateStatus.SUPER_ADMIN_APPROVED;
         mandate.superAdminApprovedAt = new Date();
-        mandate.superAdminApproverId = superAdminId;
+        const superAdminApprover = await this.usersRepository.findOne({
+            where: { id: superAdminId },
+        });
+        if (superAdminApprover) {
+            mandate.superAdminApprover = superAdminApprover;
+        }
         const savedMandate = await this.mandatesRepository.save(mandate);
         await this.sendMandateApprovedEmail(savedMandate);
         return savedMandate;
@@ -172,7 +180,12 @@ let MandatesService = MandatesService_1 = class MandatesService {
         mandate.rejectedAt = new Date();
         mandate.rejectionReason = reason;
         if (adminId) {
-            mandate.adminApproverId = adminId;
+            const adminApprover = await this.usersRepository.findOne({
+                where: { id: adminId },
+            });
+            if (adminApprover) {
+                mandate.adminApprover = adminApprover;
+            }
         }
         const savedMandate = await this.mandatesRepository.save(mandate);
         await this.sendMandateRejectedEmail(savedMandate);
@@ -225,6 +238,14 @@ let MandatesService = MandatesService_1 = class MandatesService {
             this.logger.error(`Erreur lors de la génération du PDF pour le mandat ${mandateId}:`, error);
             throw error;
         }
+    }
+    async remove(id) {
+        const mandate = await this.findOne(id);
+        if (mandate.status === mandate_entity_1.MandateStatus.SUPER_ADMIN_APPROVED) {
+            throw new common_1.BadRequestException('Impossible de supprimer un mandat déjà validé par le super administrateur');
+        }
+        await this.mandatesRepository.remove(mandate);
+        this.logger.log(`Mandat ${id} supprimé avec succès`);
     }
     async sendSubmissionConfirmationEmail(mandate) {
         try {

@@ -24,6 +24,7 @@ const update_mandate_dto_1 = require("./dto/update-mandate.dto");
 const mandate_filters_dto_1 = require("./dto/mandate-filters.dto");
 const reject_mandate_dto_1 = require("./dto/reject-mandate.dto");
 const recaptcha_service_1 = require("../security/recaptcha.service");
+const common_2 = require("@nestjs/common");
 let MandatesController = class MandatesController {
     constructor(mandatesService, recaptchaService) {
         this.mandatesService = mandatesService;
@@ -85,6 +86,21 @@ let MandatesController = class MandatesController {
         }
         catch (error) {
             throw new common_1.HttpException(error.message || 'Erreur lors de la génération du PDF', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    async remove(id) {
+        try {
+            await this.mandatesService.remove(id);
+            return {
+                success: true,
+                message: 'Mandat supprimé avec succès'
+            };
+        }
+        catch (error) {
+            return {
+                success: false,
+                error: error.message || 'Erreur lors de la suppression du mandat'
+            };
         }
     }
 };
@@ -183,6 +199,15 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], MandatesController.prototype, "generatePDF", null);
+__decorate([
+    (0, common_2.Delete)(':id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, roles_decorator_1.Roles)(user_entity_1.UserRole.SUPER_ADMIN),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], MandatesController.prototype, "remove", null);
 exports.MandatesController = MandatesController = __decorate([
     (0, common_1.Controller)('mandates'),
     __metadata("design:paramtypes", [mandates_service_1.MandatesService,

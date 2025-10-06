@@ -57,12 +57,15 @@ let AuthController = class AuthController {
         const loginResponse = await this.authService.login(email, password);
         res.cookie('adminToken', loginResponse.access_token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            secure: false,
+            sameSite: 'lax',
             maxAge: 24 * 60 * 60 * 1000,
             path: '/',
         });
-        return { user: loginResponse.user };
+        return {
+            user: loginResponse.user,
+            access_token: loginResponse.access_token
+        };
     }
     async register(registerDto) {
         return this.authService.register(registerDto.email, registerDto.password, registerDto.personalData, registerDto.role);

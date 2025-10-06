@@ -23,7 +23,7 @@ const email_module_1 = require("./modules/email/email.module");
 const pdf_module_1 = require("./modules/pdf/pdf.module");
 const security_module_1 = require("./modules/security/security.module");
 const verification_module_1 = require("./modules/verification/verification.module");
-const redis_module_1 = require("./modules/redis/redis.module");
+const cache_module_1 = require("./modules/cache/cache.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -45,20 +45,17 @@ exports.AppModule = AppModule = __decorate([
                     JWT_REFRESH_EXPIRES: Joi.string().default('7d'),
                     ENCRYPTION_KEY: Joi.string().required().length(64),
                     DATA_ENCRYPTION_IV: Joi.string().required().length(32),
-                    SMTP_HOST: Joi.string().required(),
-                    SMTP_PORT: Joi.number().required(),
-                    SMTP_USER: Joi.string().required(),
-                    SMTP_PASS: Joi.string().required(),
-                    EMAIL_FROM: Joi.string().email().required(),
+                    SMTP_HOST: Joi.string().optional(),
+                    SMTP_PORT: Joi.number().optional(),
+                    SMTP_USER: Joi.string().optional(),
+                    SMTP_PASS: Joi.string().optional(),
+                    EMAIL_FROM: Joi.string().email().optional(),
                     ALLOWED_ORIGINS: Joi.string().default('http://localhost:3000'),
                     RATE_LIMIT_WINDOW: Joi.number().default(900000),
                     MAX_LOGIN_ATTEMPTS: Joi.number().default(5),
                     SESSION_TIMEOUT: Joi.number().default(3600000),
                     FRONTEND_URL: Joi.string().uri().required(),
                     BACKEND_URL: Joi.string().uri().required(),
-                    REDIS_HOST: Joi.string().default('localhost'),
-                    REDIS_PORT: Joi.number().default(6379),
-                    REDIS_PASSWORD: Joi.string().optional(),
                     LOG_LEVEL: Joi.string()
                         .valid('error', 'warn', 'info', 'debug')
                         .default('info'),
@@ -119,7 +116,7 @@ exports.AppModule = AppModule = __decorate([
             pdf_module_1.PdfModule,
             security_module_1.SecurityModule,
             verification_module_1.VerificationModule,
-            redis_module_1.RedisModule,
+            cache_module_1.CacheModule,
         ],
         providers: [
             {

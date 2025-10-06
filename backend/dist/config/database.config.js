@@ -11,12 +11,10 @@ exports.typeOrmConfig = {
     url: configService.get('DATABASE_URL'),
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
     migrations: [__dirname + '/../migrations/*{.ts,.js}'],
-    synchronize: configService.get('NODE_ENV') === 'development',
+    synchronize: false,
     logging: configService.get('NODE_ENV') === 'development',
     extra: {
-        ssl: configService.get('NODE_ENV') === 'production'
-            ? { rejectUnauthorized: false }
-            : false,
+        ssl: false,
     },
     maxQueryExecutionTime: 1000,
     poolSize: 20,

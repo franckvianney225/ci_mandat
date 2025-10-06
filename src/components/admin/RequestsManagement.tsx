@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import ClientDetailsModal from "./ClientDetailsModal";
 import ValidateConfirm from "./ValidateConfirm";
 import RejectConfirm from "./RejectConfirm";
+import DeleteConfirm from "./DeleteConfirm";
 import CreateRequestModal from "./CreateRequestModal";
 import { generateMandatePDF } from "./PDFMandatGenerator";
 import { apiClient } from "@/lib/api";
@@ -77,6 +78,7 @@ export default function RequestsManagement({ currentUser }: RequestsManagementPr
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isValidateConfirmOpen, setIsValidateConfirmOpen] = useState(false);
   const [isRejectConfirmOpen, setIsRejectConfirmOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [pendingActionRequest, setPendingActionRequest] = useState<Request | null>(null);
   const itemsPerPage = 15;
@@ -286,6 +288,40 @@ export default function RequestsManagement({ currentUser }: RequestsManagementPr
     }
   };
 
+  const handleDeleteClick = (request: Request) => {
+    setPendingActionRequest(request);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (pendingActionRequest) {
+      try {
+        await apiClient.deleteMandate(pendingActionRequest.id);
+        // Recharger les données après suppression
+        const response = await apiClient.getMandates();
+        if (response.success && response.data) {
+          const mandates = response.data.data.map((mandate: MandateData) => ({
+            id: mandate.id,
+            nom: mandate.formData.nom,
+            prenom: mandate.formData.prenom,
+            email: mandate.formData.email,
+            telephone: mandate.formData.telephone,
+            circonscription: mandate.formData.circonscription,
+            status: mapBackendStatusToFrontend(mandate.status) as "pending" | "validated" | "rejected",
+            createdAt: mandate.createdAt,
+            referenceNumber: mandate.referenceNumber
+          }));
+          setAllRequests(mandates);
+        }
+      } catch (error) {
+        console.error("Erreur lors de la suppression du mandat:", error);
+      } finally {
+        setIsDeleteConfirmOpen(false);
+        setPendingActionRequest(null);
+      }
+    }
+  };
+
   const handleCloseValidateConfirm = () => {
     setIsValidateConfirmOpen(false);
     setPendingActionRequest(null);
@@ -293,6 +329,11 @@ export default function RequestsManagement({ currentUser }: RequestsManagementPr
 
   const handleCloseRejectConfirm = () => {
     setIsRejectConfirmOpen(false);
+    setPendingActionRequest(null);
+  };
+
+  const handleCloseDeleteConfirm = () => {
+    setIsDeleteConfirmOpen(false);
     setPendingActionRequest(null);
   };
 
@@ -572,6 +613,23 @@ export default function RequestsManagement({ currentUser }: RequestsManagementPr
                           Imprimer PDF
                         </button>
                       )}
+                      
+                      {/* Bouton Supprimer - visible uniquement pour super_admin */}
+                      {currentUser?.role === "super_admin" && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(request);
+                          }}
+                          className="inline-flex items-center px-3 py-2 border border-red-300 text-xs font-medium rounded-lg text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 transform hover:scale-105"
+                          title="Supprimer définitivement"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Supprimer
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -664,6 +722,18 @@ export default function RequestsManagement({ currentUser }: RequestsManagementPr
         isOpen={isRejectConfirmOpen}
         onClose={handleCloseRejectConfirm}
         onConfirm={handleConfirmReject}
+        requestInfo={pendingActionRequest ? {
+          nom: pendingActionRequest.nom,
+          prenom: pendingActionRequest.prenom,
+          id: pendingActionRequest.id
+        } : null}
+      />
+
+      {/* Modal de confirmation pour la suppression */}
+      <DeleteConfirm
+        isOpen={isDeleteConfirmOpen}
+        onClose={handleCloseDeleteConfirm}
+        onConfirm={handleConfirmDelete}
         requestInfo={pendingActionRequest ? {
           nom: pendingActionRequest.nom,
           prenom: pendingActionRequest.prenom,

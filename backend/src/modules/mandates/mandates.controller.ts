@@ -30,6 +30,7 @@ import { UpdateMandateDto } from './dto/update-mandate.dto';
 import { MandateFiltersDto } from './dto/mandate-filters.dto';
 import { RejectMandateDto } from './dto/reject-mandate.dto';
 import { RecaptchaService } from '../security/recaptcha.service';
+import { Delete } from '@nestjs/common';
 
 @Controller('mandates')
 export class MandatesController {
@@ -152,6 +153,25 @@ export class MandatesController {
         error.message || 'Erreur lors de la génération du PDF',
         HttpStatus.INTERNAL_SERVER_ERROR
       );
+    }
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.SUPER_ADMIN)
+  async remove(@Param('id') id: string) {
+    try {
+      await this.mandatesService.remove(id);
+      
+      return {
+        success: true,
+        message: 'Mandat supprimé avec succès'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || 'Erreur lors de la suppression du mandat'
+      };
     }
   }
 }

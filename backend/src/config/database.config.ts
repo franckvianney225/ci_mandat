@@ -12,7 +12,7 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
   url: configService.get<string>('DATABASE_URL'),
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
-  synchronize: configService.get<string>('NODE_ENV') === 'development',
+  synchronize: false, // Désactivé pour éviter les conflits de migration
   logging: configService.get<string>('NODE_ENV') === 'development',
   extra: {
     ssl: false, // Désactivé car PostgreSQL ne supporte pas SSL

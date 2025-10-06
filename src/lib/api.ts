@@ -438,6 +438,12 @@ class ApiClient {
     });
   }
 
+  async deleteMandate(mandateId: string): Promise<ApiResponse> {
+    return this.request(`/mandates/${mandateId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async generateMandatePDF(mandateId: string): Promise<Blob> {
     const response = await fetch(`${API_BASE_URL}/mandates/${mandateId}/pdf`, {
       method: 'GET',

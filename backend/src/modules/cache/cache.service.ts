@@ -1,42 +1,14 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import Redis from 'ioredis';
+import { Injectable, Logger } from '@nestjs/common';
+
+interface CacheItem {
+  value: any;
+  expiresAt: number;
+}
 
 @Injectable()
-export class RedisService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(RedisService.name);
-  private redisClient: Redis;
-
-  async onModuleInit() {
-    try {
-      this.redisClient = new Redis({
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
-        password: process.env.REDIS_PASSWORD,
-      });
-
-      this.redisClient.on('connect', () => {
-        this.logger.log('Redis client connected');
-      });
-
-      this.redisClient.on('error', (error) => {
-        this.logger.error('Redis client error:', error);
-      });
-
-      // Test connection
-      await this.redisClient.ping();
-      this.logger.log('Redis connection test successful');
-    } catch (error) {
-      this.logger.error('Failed to connect to Redis:', error);
-      throw error;
-    }
-  }
-
-  async onModuleDestroy() {
-    if (this.redisClient) {
-      await this.redisClient.quit();
-      this.logger.log('Redis client disconnected');
-    }
-  }
+export class CacheService {
+  private readonly logger = new Logger(CacheService.name);
+  private cache = new Map<string, CacheItem>();
 
   /**
    * Stocke un PDF en cache avec TTL
@@ -44,7 +16,13 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async cachePDF(referenceNumber: string, pdfBuffer: Buffer, ttlSeconds: number = 86400): Promise<void> {
     try {
       const key = `pdf:${referenceNumber}`;
-      await this.redisClient.setex(key, ttlSeconds, pdfBuffer.toString('base64'));
+      const expiresAt = Date.now() + (ttlSeconds * 1000);
+      
+      this.cache.set(key, {
+        value: pdfBuffer.toString('base64'),
+        expiresAt
+      });
+      
       this.logger.log(`PDF cached for reference: ${referenceNumber}, TTL: ${ttlSeconds}s`);
     } catch (error) {
       this.logger.error(`Failed to cache PDF for ${referenceNumber}:`, error);
@@ -58,11 +36,18 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async getCachedPDF(referenceNumber: string): Promise<Buffer | null> {
     try {
       const key = `pdf:${referenceNumber}`;
-      const cachedData = await this.redisClient.get(key);
+      const cachedItem = this.cache.get(key);
       
-      if (cachedData) {
+      if (cachedItem) {
+        // Vérifier si l'élément a expiré
+        if (Date.now() > cachedItem.expiresAt) {
+          this.cache.delete(key);
+          this.logger.log(`PDF cache expired for reference: ${referenceNumber}`);
+          return null;
+        }
+        
         this.logger.log(`PDF cache hit for reference: ${referenceNumber}`);
-        return Buffer.from(cachedData, 'base64');
+        return Buffer.from(cachedItem.value, 'base64');
       }
       
       this.logger.log(`PDF cache miss for reference: ${referenceNumber}`);
@@ -79,7 +64,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async deleteCachedPDF(referenceNumber: string): Promise<void> {
     try {
       const key = `pdf:${referenceNumber}`;
-      await this.redisClient.del(key);
+      this.cache.delete(key);
       this.logger.log(`PDF cache deleted for reference: ${referenceNumber}`);
     } catch (error) {
       this.logger.error(`Failed to delete cached PDF for ${referenceNumber}:`, error);
@@ -98,7 +83,13 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         data,
         timestamp: new Date().toISOString(),
       };
-      await this.redisClient.setex(key, 3600, JSON.stringify(statusData)); // TTL 1h
+      
+      // TTL 1h
+      const expiresAt = Date.now() + (3600 * 1000);
+      this.cache.set(key, {
+        value: JSON.stringify(statusData),
+        expiresAt
+      });
     } catch (error) {
       this.logger.error(`Failed to set PDF generation status for job ${jobId}:`, error);
       throw error;
@@ -111,10 +102,16 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async getPDFGenerationStatus(jobId: string): Promise<{ status: string; data?: any; timestamp: string } | null> {
     try {
       const key = `pdf_job:${jobId}`;
-      const statusData = await this.redisClient.get(key);
+      const cachedItem = this.cache.get(key);
       
-      if (statusData) {
-        return JSON.parse(statusData);
+      if (cachedItem) {
+        // Vérifier si l'élément a expiré
+        if (Date.now() > cachedItem.expiresAt) {
+          this.cache.delete(key);
+          return null;
+        }
+        
+        return JSON.parse(cachedItem.value);
       }
       
       return null;
@@ -125,15 +122,43 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Vérifie la santé du service Redis
+   * Vérifie la santé du service de cache
    */
   async healthCheck(): Promise<boolean> {
     try {
-      await this.redisClient.ping();
+      // Nettoyer le cache des éléments expirés
+      this.cleanupExpiredItems();
       return true;
     } catch (error) {
-      this.logger.error('Redis health check failed:', error);
+      this.logger.error('Cache health check failed:', error);
       return false;
     }
+  }
+
+  /**
+   * Nettoie les éléments expirés du cache
+   */
+  private cleanupExpiredItems(): void {
+    const now = Date.now();
+    for (const [key, item] of this.cache.entries()) {
+      if (now > item.expiresAt) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Vide complètement le cache (pour les tests)
+   */
+  clear(): void {
+    this.cache.clear();
+    this.logger.log('Cache cleared');
+  }
+
+  /**
+   * Retourne la taille actuelle du cache
+   */
+  getSize(): number {
+    return this.cache.size;
   }
 }

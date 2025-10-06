@@ -54,7 +54,7 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "email", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 255 }),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, name: 'password_hash' }),
     (0, class_transformer_1.Exclude)(),
     __metadata("design:type", String)
 ], User.prototype, "passwordHash", void 0);
@@ -77,20 +77,20 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "status", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'jsonb', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'jsonb', nullable: true, name: 'personal_data' }),
     __metadata("design:type", Object)
 ], User.prototype, "personalData", void 0);
 __decorate([
-    (0, typeorm_1.CreateDateColumn)({ type: 'timestamptz' }),
+    (0, typeorm_1.CreateDateColumn)({ type: 'timestamptz', name: 'created_at' }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], User.prototype, "createdAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true, name: 'last_login' }),
     __metadata("design:type", String)
 ], User.prototype, "lastLogin", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    (0, typeorm_1.Column)({ type: 'int', default: 0, name: 'login_attempts' }),
     __metadata("design:type", Number)
 ], User.prototype, "loginAttempts", void 0);
 __decorate([

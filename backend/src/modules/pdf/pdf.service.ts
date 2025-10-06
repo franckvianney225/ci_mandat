@@ -2,8 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { jsPDF } from 'jspdf';
 import { Mandate } from '../../entities/mandate.entity';
 import { SecurityService } from '../security/security.service';
-import { RedisService } from '../redis/redis.service';
+import { CacheService } from '../cache/cache.service';
 import { v4 as uuidv4 } from 'uuid';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class PdfService {
@@ -11,8 +13,23 @@ export class PdfService {
 
   constructor(
     private securityService: SecurityService,
-    private redisService: RedisService,
+    private cacheService: CacheService,
   ) {}
+
+  /**
+   * Charge le logo en base64
+   */
+  private loadLogo(): string {
+    try {
+      const logoPath = path.join(__dirname, '..', '..', 'assets', 'logorhdp.jpeg');
+      const logoBuffer = fs.readFileSync(logoPath);
+      const base64String = logoBuffer.toString('base64');
+      return `data:image/jpeg;base64,${base64String}`;
+    } catch (error) {
+      this.logger.warn('Impossible de charger le logo, utilisation du cercle jaune par défaut');
+      return '';
+    }
+  }
 
   /**
    * Ajoute un filigrane de sécurité OFFICIEL répété sur toute la page
@@ -75,34 +92,52 @@ export class PdfService {
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...primaryColor);
       
-      // Texte CEI à gauche
-      doc.text('COMMISSION ELECTORALE', 20, yPos);
-      doc.text('INDÉPENDANTE', 20, yPos + 5);
+      // Logo CEI
+      const logoDataUrl = this.loadLogo();
+      if (logoDataUrl) {
+        const logoWidth = 25;
+        const logoHeight = 25;
+        const logoX = 20;
+        const logoY = yPos + 10;
+        doc.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoWidth, logoHeight);
+      } else {
+        // Fallback au cercle jaune si le logo ne peut pas être chargé
+        doc.setFillColor(...yellowColor);
+        doc.circle(35, yPos + 15, 8, 'F');
+        doc.setFontSize(8);
+        doc.setTextColor(0, 0, 0);
+        doc.text('CEI', 32, yPos + 17);
+      }
       
-      // Cercle jaune CEI
-      doc.setFillColor(...yellowColor);
-      doc.circle(35, yPos + 15, 8, 'F');
-      doc.setFontSize(8);
-      doc.setTextColor(0, 0, 0);
-      doc.text('CEI', 32, yPos + 17);
-      
-      // Texte sous le cercle
+      // Texte sous le logo
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
-      doc.text('CURESS', 20, yPos + 28);
+      doc.text('CURESS', 20, yPos + 38);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(100, 100, 100);
-      doc.text('L\'Espérance au Service du Peuple', 20, yPos + 32);
+      doc.text('L\'Espérance au Service du Peuple', 20, yPos + 42);
       
       // République à droite
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...primaryColor);
-      doc.text('RÉPUBLIQUE DE CÔTE D\'IVOIRE', pageWidth - 20, yPos, { align: 'right' });
+
+      // Texte principal aligné à droite
+      const republiqueText = 'RÉPUBLIQUE DE CÔTE D\'IVOIRE';
+      doc.text(republiqueText, pageWidth - 20, yPos, { align: 'right' });
+
+      // Calculer la largeur du texte pour centrer le texte en dessous
+      const republiqueTextWidth = doc.getTextWidth(republiqueText);
+      const republiqueStartX = pageWidth - 20 - republiqueTextWidth;
+
+      // Texte en dessous centré
       doc.setFontSize(9);
-      doc.text('Union-Discipline-Travail', pageWidth - 20, yPos + 5, { align: 'right' });
+      const unionText = 'Union-Discipline-Travail';
+      const unionTextWidth = doc.getTextWidth(unionText);
+      const unionStartX = republiqueStartX + (republiqueTextWidth - unionTextWidth) / 2;
+      doc.text(unionText, unionStartX, yPos + 5);
       
-      yPos += 45;
+      yPos += 50;
 
       // Titre principal avec bordure
       doc.setFontSize(16);
@@ -141,47 +176,71 @@ export class PdfService {
       const rightMargin = pageWidth - 30;
       const textWidth = rightMargin - leftMargin;
 
-      // Paragraphe 1
-      doc.text('Conformément aux dispositions des articles 35 nouveau et 38 du code électoral :', leftMargin, yPos, { maxWidth: textWidth });
-      yPos += lineHeight * 2;
+      // Paragraphe principal avec le nouveau contenu
+      const ligne1 = 'Conformément aux dispositions des articles 35 nouveau et 38 du Code électoral, Monsieur ';
+      doc.text(ligne1, leftMargin, yPos, { maxWidth: textWidth });
 
-      // Paragraphe 2
+      // "Alassane Ouattara" en gras sur la même ligne
       doc.setFont('helvetica', 'bold');
-      doc.text('ALLASSANE OUATTARA', leftMargin, yPos);
+      const candidateName = 'ALASSANE OUATTARA';
+      const ligne1Width = doc.getTextWidth(ligne1);
+      doc.text(candidateName, leftMargin + ligne1Width, yPos);
+
+      // Suite de la première ligne
       doc.setFont('helvetica', 'normal');
-      doc.text(' candidat à l\'élection présidentielle du 25 octobre 2025,', leftMargin + doc.getTextWidth('ALLASSANE OUATTARA '), yPos);
-      yPos += lineHeight * 2;
+      const ligne1Suite = ', candidat à l\'élection présidentielle du 25 octobre 2025,';
+      doc.text(ligne1Suite, leftMargin + ligne1Width + doc.getTextWidth(candidateName + ' '), yPos);
 
-      // Paragraphe 3
-      doc.text('donne mandat à Mme/M................................................................................', leftMargin, yPos);
-      yPos += lineHeight * 2;
-
-      // Paragraphe 4
-      doc.text('pour le représenter dans le Bureau de vote n°................................................................', leftMargin, yPos);
-      yPos += lineHeight * 2;
-
-      // Paragraphe 5
-      doc.text('du Lieu de Vote........................................................................................................................', leftMargin, yPos);
-      yPos += lineHeight * 2;
-
-      // Paragraphe 6
-      doc.text('de la circonscription électorale d\'', leftMargin, yPos);
-      doc.setFont('helvetica', 'bold');
-      doc.text(mandate.formData.circonscription, leftMargin + doc.getTextWidth('de la circonscription électorale d\''), yPos);
-      doc.setFont('helvetica', 'normal');
-      doc.text('.', leftMargin + doc.getTextWidth('de la circonscription électorale d\'' + mandate.formData.circonscription), yPos);
-      yPos += lineHeight * 2;
-
-      // Paragraphe 7
-      doc.text('Le présent mandat lui est délivré en qualité de Représentant(e) Principal(e) pour servir', leftMargin, yPos);
       yPos += lineHeight;
-      doc.text('les intérêts du Candidat ', leftMargin, yPos);
+
+      // Deuxième ligne
+      const ligne2 = 'donne mandat à Mme/M. ';
+      doc.text(ligne2, leftMargin, yPos);
+
+      // Nom du mandataire en gras
       doc.setFont('helvetica', 'bold');
-      doc.text(`${mandate.formData.prenom} ${mandate.formData.nom}`, leftMargin + doc.getTextWidth('les intérêts du Candidat '), yPos);
+      const mandataireNom = `${mandate.formData.prenom.toUpperCase()} ${mandate.formData.nom.toUpperCase()}`;
+      const ligne2Width = doc.getTextWidth(ligne2);
+      doc.text(mandataireNom, leftMargin + ligne2Width, yPos);
+
+      // Suite de la deuxième ligne
       doc.setFont('helvetica', 'normal');
-      doc.text(' et en valoir ce que de droit.', leftMargin + doc.getTextWidth('les intérêts du Candidat ' + mandate.formData.prenom + ' ' + mandate.formData.nom), yPos);
-      
-      yPos += lineHeight * 3;
+      const ligne2Suite = ', (fonction) pour le représenter dans la circonscription électorale de ';
+      doc.text(ligne2Suite, leftMargin + ligne2Width + doc.getTextWidth(mandataireNom + ' '), yPos);
+
+      yPos += lineHeight;
+
+      // Troisième ligne avec la circonscription
+      doc.setFont('helvetica', 'bold');
+      const circonscriptionText = `${mandate.formData.circonscription.toUpperCase()}`;
+      doc.text(circonscriptionText, leftMargin, yPos);
+
+      // Suite de la troisième ligne
+      doc.setFont('helvetica', 'normal');
+      doc.text('.', leftMargin + doc.getTextWidth(circonscriptionText), yPos);
+
+      yPos += lineHeight * 2;
+
+      // Quatrième ligne - deuxième paragraphe
+      const ligne4 = 'Le présent mandat est délivré à l\'intéressé(e) en qualité de Représentant(e) Principal(e), afin de';
+      doc.text(ligne4, leftMargin, yPos);
+
+      yPos += lineHeight;
+
+      // Cinquième ligne
+      const ligne5 = 'défendre et servir les intérêts du candidat ';
+      doc.text(ligne5, leftMargin, yPos);
+
+      // "Alassane Ouattara" en gras
+      doc.setFont('helvetica', 'bold');
+      doc.text(candidateName, leftMargin + doc.getTextWidth(ligne5), yPos);
+
+      // Suite de la cinquième ligne
+      doc.setFont('helvetica', 'normal');
+      const ligne5Fin = ', et pour valoir ce que de droit.';
+      doc.text(ligne5Fin, leftMargin + doc.getTextWidth(ligne5) + doc.getTextWidth(candidateName + ' '), yPos);
+
+      yPos += lineHeight * 5;
 
       // Date et signature
       const currentDate = new Date().toLocaleDateString('fr-FR', {
@@ -243,11 +302,11 @@ export class PdfService {
   async generateMandatePDFAsync(mandate: Mandate): Promise<{ jobId: string }> {
     try {
       // Vérifier d'abord le cache
-      const cachedPDF = await this.redisService.getCachedPDF(mandate.referenceNumber);
+      const cachedPDF = await this.cacheService.getCachedPDF(mandate.referenceNumber);
       if (cachedPDF) {
         this.logger.log(`PDF trouvé en cache pour: ${mandate.referenceNumber}`);
         const jobId = uuidv4();
-        await this.redisService.setPDFGenerationStatus(jobId, 'completed', {
+        await this.cacheService.setPDFGenerationStatus(jobId, 'completed', {
           pdfBuffer: cachedPDF,
           fileName: `mandat_${mandate.referenceNumber}.pdf`
         });
@@ -256,7 +315,7 @@ export class PdfService {
 
       // Créer un job de génération
       const jobId = uuidv4();
-      await this.redisService.setPDFGenerationStatus(jobId, 'pending');
+      await this.cacheService.setPDFGenerationStatus(jobId, 'pending');
 
       // Lancer la génération en arrière-plan
       this.processPDFGeneration(jobId, mandate);
@@ -273,16 +332,16 @@ export class PdfService {
    */
   private async processPDFGeneration(jobId: string, mandate: Mandate): Promise<void> {
     try {
-      await this.redisService.setPDFGenerationStatus(jobId, 'processing');
+      await this.cacheService.setPDFGenerationStatus(jobId, 'processing');
 
       // Générer le PDF
       const { pdfBuffer, fileName } = await this.generateMandatePDF(mandate);
 
       // Mettre en cache
-      await this.redisService.cachePDF(mandate.referenceNumber, pdfBuffer);
+      await this.cacheService.cachePDF(mandate.referenceNumber, pdfBuffer);
 
       // Mettre à jour le statut
-      await this.redisService.setPDFGenerationStatus(jobId, 'completed', {
+      await this.cacheService.setPDFGenerationStatus(jobId, 'completed', {
         pdfBuffer,
         fileName
       });
@@ -290,7 +349,7 @@ export class PdfService {
       this.logger.log(`Génération PDF asynchrone terminée pour job: ${jobId}`);
     } catch (error) {
       this.logger.error(`Erreur lors de la génération asynchrone pour job ${jobId}:`, error);
-      await this.redisService.setPDFGenerationStatus(jobId, 'failed', {
+      await this.cacheService.setPDFGenerationStatus(jobId, 'failed', {
         error: error instanceof Error ? error.message : 'Erreur inconnue'
       });
     }
@@ -300,7 +359,7 @@ export class PdfService {
    * Récupère le statut d'une génération PDF
    */
   async getPDFGenerationStatus(jobId: string): Promise<{ status: string; data?: any; timestamp: string } | null> {
-    return this.redisService.getPDFGenerationStatus(jobId);
+    return this.cacheService.getPDFGenerationStatus(jobId);
   }
 
   /**
@@ -308,7 +367,7 @@ export class PdfService {
    */
   async getCachedPDF(referenceNumber: string): Promise<{ pdfBuffer: Buffer; fileName: string } | null> {
     try {
-      const pdfBuffer = await this.redisService.getCachedPDF(referenceNumber);
+      const pdfBuffer = await this.cacheService.getCachedPDF(referenceNumber);
       if (pdfBuffer) {
         return {
           pdfBuffer,
@@ -327,7 +386,7 @@ export class PdfService {
    */
   async deleteCachedPDF(referenceNumber: string): Promise<void> {
     try {
-      await this.redisService.deleteCachedPDF(referenceNumber);
+      await this.cacheService.deleteCachedPDF(referenceNumber);
       this.logger.log(`PDF supprimé du cache pour: ${referenceNumber}`);
     } catch (error) {
       this.logger.error(`Erreur lors de la suppression du PDF en cache pour ${referenceNumber}:`, error);

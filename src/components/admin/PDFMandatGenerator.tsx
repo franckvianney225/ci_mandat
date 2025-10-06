@@ -18,9 +18,6 @@ interface MandateData {
 
 // Fonctions de sécurité et de validation
 const SecurityUtils = {
-  /**
-   * Valide et nettoie les données du mandat
-   */
   validateMandateData(mandate: MandateData): MandateData {
     if (!mandate || typeof mandate !== 'object') {
       throw new Error('Données du mandat invalides');
@@ -44,9 +41,6 @@ const SecurityUtils = {
     };
   },
 
-  /**
-   * Nettoie le texte pour éviter l'injection XSS et autres attaques
-   */
   sanitizeText(text: string): string {
     if (typeof text !== 'string') {
       return '';
@@ -54,21 +48,17 @@ const SecurityUtils = {
 
     return text
       .trim()
-      .replace(/[<>]/g, '') // Supprime les caractères < et >
-      .replace(/javascript:/gi, '') // Supprime les références javascript:
-      .replace(/on\w+=/gi, '') // Supprime les event handlers
-      .substring(0, 100); // Limite la longueur
+      .replace(/[<>]/g, '')
+      .replace(/javascript:/gi, '')
+      .replace(/on\w+=/gi, '')
+      .substring(0, 100);
   },
 
-  /**
-   * Valide le format du numéro de référence
-   */
   validateReferenceNumber(referenceNumber: string): string {
     if (typeof referenceNumber !== 'string') {
       throw new Error('Numéro de référence invalide');
     }
 
-    // Format attendu: MND-XXXXXXXX-XXXX (MND-8 caractères-4 caractères alphanumériques)
     const refPattern = /^MND-[A-Z0-9]{8}-[A-Z0-9]{4}$/;
     if (!refPattern.test(referenceNumber)) {
       throw new Error('Format du numéro de référence invalide');
@@ -77,44 +67,30 @@ const SecurityUtils = {
     return referenceNumber;
   },
 
-  /**
-   * Encode un paramètre URL de manière sécurisée
-   */
   encodeURIComponentSafe(value: string): string {
     return encodeURIComponent(value)
-      .replace(/'/g, '%27') // Encode les apostrophes
-      .replace(/"/g, '%22'); // Encode les guillemets
+      .replace(/'/g, '%27')
+      .replace(/"/g, '%22');
   },
 
-  /**
-   * Génère un nom de fichier sécurisé
-   */
   generateSecureFileName(referenceNumber: string): string {
     const sanitized = referenceNumber.replace(/[^a-zA-Z0-9-_]/g, '_');
     return `mandat_${sanitized}.pdf`;
   },
 
-  /**
-   * Génère une signature cryptographique identique au backend
-   * Utilise la même logique que SecurityService.generateSignature()
-   */
   async generateSignature(mandate: MandateData): Promise<string> {
-    // IMPORTANT: Cette clé doit être identique à celle du backend
     const secretKey = process.env.NEXT_PUBLIC_PDF_SIGNATURE_SECRET;
     
     if (!secretKey) {
       throw new Error('Clé secrète pour la signature PDF non configurée');
     }
     
-    // Même logique que le backend: id + referenceNumber + timestamp
     const dataToSign = `${mandate.id}-${mandate.referenceNumber}-${new Date(mandate.createdAt).getTime()}`;
     
-    // Générer le HMAC-SHA256 (identique au backend)
     const encoder = new TextEncoder();
     const keyData = encoder.encode(secretKey);
     const data = encoder.encode(dataToSign);
     
-    // Utiliser Web Crypto API pour générer le HMAC (identique à crypto.createHmac)
     return crypto.subtle.importKey(
       'raw',
       keyData,
@@ -124,47 +100,29 @@ const SecurityUtils = {
     ).then(key => {
       return crypto.subtle.sign('HMAC', key, data);
     }).then(signature => {
-      // Convertir ArrayBuffer en hex string
       const hashArray = Array.from(new Uint8Array(signature));
       const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      
-      // Même format que le backend: 16 caractères
       return hashHex.substring(0, 16);
     });
   },
 
-  /**
-   * Génère une URL de vérification identique au backend
-   * Utilise la même logique que SecurityService.generateVerificationUrl()
-   */
   async generateVerificationUrl(mandate: MandateData, baseUrl?: string): Promise<string> {
     const signature = await this.generateSignature(mandate);
     const verificationBaseUrl = baseUrl || process.env.NEXT_PUBLIC_VERIFICATION_BASE_URL || 'http://localhost:3000';
     return `${verificationBaseUrl}/verification?ref=${mandate.referenceNumber}&sig=${signature}`;
   },
 
-  /**
-   * Ajoute un filigrane de sécurité en arrière-plan (répété sur toute la page)
-   */
   addSecurityWatermark(doc: jsPDF, pageWidth: number, pageHeight: number): void {
     doc.saveGraphicsState();
-
-    // Configuration du filigrane
-    doc.setTextColor(245, 245, 245); // Gris très clair
+    doc.setTextColor(245, 245, 245);
     doc.setFontSize(36);
     doc.setFont('helvetica', 'bold');
 
-    // Texte du filigrane (juste OFFICIEL comme demandé)
     const watermarkText = 'OFFICIEL';
-
-    // Rotation et positionnement diagonal
     const angle = -45;
-
-    // Espacement très serré pour couverture maximale PARTOUT
     const stepX = 60;
     const stepY = 45;
 
-    // Créer un pattern ultra-dense répété sur TOUTE la page
     for (let x = -20; x < pageWidth + 20; x += stepX) {
       for (let y = -20; y < pageHeight + 20; y += stepY) {
         doc.text(watermarkText, x, y, {
@@ -188,7 +146,6 @@ const PDFMandatGenerator = forwardRef(({
   onClose
 }: PDFMandatGeneratorProps, ref) => {
   const generatePDF = async () => {
-    // Étape 1 : Validation et sécurisation des données
     let secureMandate: MandateData;
     try {
       secureMandate = SecurityUtils.validateMandateData(mandate);
@@ -201,17 +158,15 @@ const PDFMandatGenerator = forwardRef(({
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Ajouter le filigrane de sécurité
+    // Ajouter le filigrane
     SecurityUtils.addSecurityWatermark(doc, pageWidth, pageHeight);
 
-    // Générer le QR code de manière sécurisée (même logique que le backend)
+    // Générer le QR code
     const generateQRCode = async (): Promise<string> => {
       try {
-        // Générer l'URL de vérification avec signature (identique au backend)
         const baseUrl = window.location.origin;
         const verificationUrl = await SecurityUtils.generateVerificationUrl(secureMandate, baseUrl);
 
-        // Validation supplémentaire de l'URL générée
         try {
           new URL(verificationUrl);
         } catch {
@@ -222,78 +177,71 @@ const PDFMandatGenerator = forwardRef(({
           width: 150,
           margin: 1,
           color: {
-            dark: '#FF8200', // Orange CI-Mandat (identique au backend)
+            dark: '#FF8200',
             light: '#FFFFFF'
           },
-          errorCorrectionLevel: 'M' // Niveau de correction d'erreur moyen pour plus de sécurité
+          errorCorrectionLevel: 'M'
         });
 
         return qrCodeDataUrl;
       } catch (error) {
         console.error('Erreur lors de la génération du QR code:', error);
-        throw error; // Remonter l'erreur plutôt que de retourner une chaîne vide
+        throw error;
       }
     };
 
     const qrCodeDataUrl = await generateQRCode();
     
-    // Couleurs
-    const primaryColor: [number, number, number] = [0, 0, 0]; // Noir
-    const secondaryColor: [number, number, number] = [52, 73, 94]; // Gris foncé
-    const yellowColor: [number, number, number] = [255, 215, 0]; // Jaune CEI
+    const primaryColor: [number, number, number] = [0, 0, 0];
     
-    // Position Y courante
-    let yPos = 20;
+    let yPos = 10;
 
     // En-tête avec logos
-    // Logo CEI à gauche
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...primaryColor);
     
-    // Texte CEI à gauche
-    doc.text('COMMISSION ELECTORALE', 20, yPos);
-    doc.text('INDÉPENDANTE', 20, yPos + 5);
-    
-    // Cercle jaune CEI
-    doc.setFillColor(...yellowColor);
-    doc.circle(35, yPos + 15, 8, 'F');
-    doc.setFontSize(8);
-    doc.setTextColor(0, 0, 0);
-    doc.text('CEI', 32, yPos + 17);
-    
-    // Texte sous le cercle
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text('CURESS', 20, yPos + 28);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    doc.text('L\'Espérance au Service du Peuple', 20, yPos + 32);
-    
+    // Logo RHDP à gauche
+    const logoWidth = 25;
+    const logoHeight = 25;
+    const logoX = 20;
+    const logoY = yPos;
+    const logoPath = '/logorhdp.jpeg';
+    doc.addImage(logoPath, 'JPEG', logoX, logoY, logoWidth, logoHeight);
+
     // République à droite
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...primaryColor);
-    doc.text('RÉPUBLIQUE DE CÔTE D\'IVOIRE', pageWidth - 20, yPos, { align: 'right' });
+
+    // Texte principal aligné à droite
+    const republiqueText = 'RÉPUBLIQUE DE CÔTE D\'IVOIRE';
+    doc.text(republiqueText, pageWidth - 20, yPos + 5, { align: 'right' });
+
+    // Calculer la largeur du texte pour centrer le texte en dessous
+    const republiqueTextWidth = doc.getTextWidth(republiqueText);
+    const republiqueStartX = pageWidth - 20 - republiqueTextWidth;
+
+    // Texte en dessous centré
     doc.setFontSize(9);
-    doc.text('Union-Discipline-Travail', pageWidth - 20, yPos + 5, { align: 'right' });
-    
-    yPos += 45;
+    const unionText = 'Union-Discipline-Travail';
+    const unionTextWidth = doc.getTextWidth(unionText);
+    const unionStartX = republiqueStartX + (republiqueTextWidth - unionTextWidth) / 2;
+    doc.text(unionText, unionStartX, yPos + 11);
+
+    yPos += 60;
 
     // Titre principal avec bordure
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...primaryColor);
-    
-    // Rectangle de bordure
     doc.setDrawColor(...primaryColor);
     doc.setLineWidth(2);
     doc.rect(30, yPos, pageWidth - 60, 25);
     
-    // Texte dans le rectangle
     doc.text('ÉLECTION PRESIDENTIELLE', pageWidth / 2, yPos + 10, { align: 'center' });
     doc.setFontSize(14);
-    doc.setTextColor(30, 64, 175); // Bleu
+    doc.setTextColor(30, 64, 175);
     doc.text('SCRUTIN DU 25 OCTOBRE 2025', pageWidth / 2, yPos + 18, { align: 'center' });
     
     yPos += 40;
@@ -303,60 +251,97 @@ const PDFMandatGenerator = forwardRef(({
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...primaryColor);
     doc.text('MANDAT DU REPRÉSENTANT PRINCIPAL', pageWidth / 2, yPos, { align: 'center' });
-    doc.text('DANS LE BUREAU DE VOTE', pageWidth / 2, yPos + 6, { align: 'center' });
+    yPos += 7;
+    doc.text('DANS LE BUREAU DE VOTE', pageWidth / 2, yPos, { align: 'center' });
     
     yPos += 20;
 
-    // Corps du document
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...primaryColor);
-    
-    const lineHeight = 6;
+    // Corps du document - MARGES CENTRÉES
     const leftMargin = 30;
     const rightMargin = pageWidth - 30;
     const textWidth = rightMargin - leftMargin;
+    const lineHeight = 7;
 
-    // Paragraphe 1
-    doc.text('Conformément aux dispositions des articles 35 nouveau et 38 du code électoral :', leftMargin, yPos, { maxWidth: textWidth });
-    yPos += lineHeight * 2;
-
-    // Paragraphe 2
-    doc.setFont('helvetica', 'bold');
-    doc.text('ALLASSANE OUATTARA', leftMargin, yPos);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(' candidat à l\'élection présidentielle du 25 octobre 2025,', leftMargin + doc.getTextWidth('ALLASSANE OUATTARA '), yPos);
-    yPos += lineHeight * 2;
+    doc.setTextColor(...primaryColor);
 
-    // Paragraphe 3
-    doc.text('donne mandat à Mme/M................................................................................', leftMargin, yPos);
-    yPos += lineHeight * 2;
-
-    // Paragraphe 4
-    doc.text('pour le représenter dans le Bureau de vote n°................................................................', leftMargin, yPos);
-    yPos += lineHeight * 2;
-
-    // Paragraphe 5
-    doc.text('du Lieu de Vote........................................................................................................................', leftMargin, yPos);
-    yPos += lineHeight * 2;
-
-    // Paragraphe 6
-    doc.text('de la circonscription électorale d\'', leftMargin, yPos);
-    doc.setFont('helvetica', 'bold');
-    doc.text(secureMandate.circonscription, leftMargin + doc.getTextWidth('de la circonscription électorale d\''), yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.text('.', leftMargin + doc.getTextWidth('de la circonscription électorale d\'' + secureMandate.circonscription), yPos);
-    yPos += lineHeight * 2;
-
-    // Paragraphe 7
-    doc.text('Le présent mandat lui est délivré en qualité de Représentant(e) Principal(e) pour servir', leftMargin, yPos);
-    yPos += lineHeight;
-    doc.text('les intérêts du Candidat ', leftMargin, yPos);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`${secureMandate.prenom} ${secureMandate.nom}`, leftMargin + doc.getTextWidth('les intérêts du Candidat '), yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.text(' et en valoir ce que de droit.', leftMargin + doc.getTextWidth('les intérêts du Candidat ' + secureMandate.prenom + ' ' + secureMandate.nom), yPos);
+    // Corps du document - TEXTE CENTRÉ AVEC FORMATAGE
+    const centerX = pageWidth / 2;
     
+    // Fonction pour centrer du texte avec des parties en gras
+    const drawCenteredTextWithBold = (textParts: {text: string, bold: boolean}[], y: number) => {
+      // Calculer la largeur totale
+      let totalWidth = 0;
+      for (const part of textParts) {
+        if (part.bold) {
+          doc.setFont('helvetica', 'bold');
+        } else {
+          doc.setFont('helvetica', 'normal');
+        }
+        totalWidth += doc.getTextWidth(part.text);
+      }
+
+      // Position de départ pour centrer sur toute la largeur de la page
+      const startX = (pageWidth - totalWidth) / 2;
+      let currentX = startX;
+
+      // Dessiner chaque partie
+      for (const part of textParts) {
+        if (part.bold) {
+          doc.setFont('helvetica', 'bold');
+        } else {
+          doc.setFont('helvetica', 'normal');
+        }
+        doc.text(part.text, currentX, y);
+        currentX += doc.getTextWidth(part.text);
+      }
+
+      // Remettre la police normale
+      doc.setFont('helvetica', 'normal');
+    };
+
+    // Première ligne
+    const ligne1Parts = [
+      { text: 'Conformément aux dispositions des articles 35 nouveau et 38 du Code électoral, Monsieur ', bold: false },
+      { text: 'ALASSANE OUATTARA', bold: true },
+      { text: ', candidat à l\'élection présidentielle du 25 octobre 2025,', bold: false }
+    ];
+    drawCenteredTextWithBold(ligne1Parts, yPos);
+    yPos += lineHeight;
+
+    // Deuxième ligne
+    const ligne2Parts = [
+      { text: 'donne mandat à Mme/M. ', bold: false },
+      { text: `${secureMandate.prenom.toUpperCase()} ${secureMandate.nom.toUpperCase()}`, bold: true },
+      { text: ', (fonction) pour le représenter dans la circonscription électorale de ', bold: false }
+    ];
+    drawCenteredTextWithBold(ligne2Parts, yPos);
+    yPos += lineHeight;
+
+    // Troisième ligne
+    const ligne3Parts = [
+      { text: `${secureMandate.circonscription.toUpperCase()}`, bold: true },
+      { text: '.', bold: false }
+    ];
+    drawCenteredTextWithBold(ligne3Parts, yPos);
+    yPos += lineHeight * 2;
+
+    // Quatrième ligne
+    const ligne4Parts = [
+      { text: 'Le présent mandat est délivré à l\'intéressé(e) en qualité de Représentant(e) Principal(e), afin de', bold: false }
+    ];
+    drawCenteredTextWithBold(ligne4Parts, yPos);
+    yPos += lineHeight;
+
+    // Cinquième ligne
+    const ligne5Parts = [
+      { text: 'défendre et servir les intérêts du candidat ', bold: false },
+      { text: 'ALASSANE OUATTARA', bold: true },
+      { text: ', et pour valoir ce que de droit.', bold: false }
+    ];
+    drawCenteredTextWithBold(ligne5Parts, yPos);
+
     yPos += lineHeight * 3;
 
     // Date et signature
@@ -366,17 +351,20 @@ const PDFMandatGenerator = forwardRef(({
       year: 'numeric'
     });
 
-    // Date à gauche
-    doc.text(`Fait .................................................. le ${currentDate}`, leftMargin, yPos);
+    // Date alignée à droite
+    const dateText = `Fait à (lieu) le ${currentDate}`;
+    doc.text(dateText, pageWidth - 20, yPos, { align: 'right' });
     
-    // Signature à droite
-    const signatureX = pageWidth - 50;
-    doc.text('Le Candidat', signatureX, yPos - 20, { align: 'center' });
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text(`Dr ${secureMandate.prenom} ${secureMandate.nom}`, signatureX, yPos, { align: 'center' });
+    // Signature à droite - positionnée en dessous de la date
+    // const signatureX = pageWidth - 60;
+    // doc.setFont('helvetica', 'normal');
+    // doc.setFontSize(10);
+    // doc.text('Le Candidat', signatureX, yPos + 10, { align: 'center' });
+    // doc.setFont('helvetica', 'bold');
+    // doc.setFontSize(11);
+    // doc.text(`${secureMandate.prenom} ${secureMandate.nom}`, signatureX, yPos + 25, { align: 'center' });
     
-    // Ajouter le QR code en bas à droite
+    // QR code en bas à droite
     if (qrCodeDataUrl) {
       const qrCodeWidth = 30;
       const qrCodeHeight = 30;
@@ -385,12 +373,11 @@ const PDFMandatGenerator = forwardRef(({
       
       doc.addImage(qrCodeDataUrl, 'PNG', qrCodeX, qrCodeY, qrCodeWidth, qrCodeHeight);
       
-      // Texte sous le QR code
       doc.setFontSize(6);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(100, 100, 100);
-      doc.text('Scanner pour vérifier', qrCodeX, qrCodeY + qrCodeHeight + 5, { align: 'center' });
-      doc.text('l\'authenticité', qrCodeX + qrCodeWidth / 2, qrCodeY + qrCodeHeight + 8, { align: 'center' });
+      doc.text('Scanner pour vérifier', qrCodeX + qrCodeWidth / 2, qrCodeY + qrCodeHeight + 4, { align: 'center' });
+      doc.text('l\'authenticité', qrCodeX + qrCodeWidth / 2, qrCodeY + qrCodeHeight + 7, { align: 'center' });
     }
 
     // Référence en bas à gauche
@@ -399,22 +386,18 @@ const PDFMandatGenerator = forwardRef(({
     doc.setTextColor(100, 100, 100);
     doc.text(`Référence: ${secureMandate.referenceNumber}`, 20, pageHeight - 10);
 
-    // Sauvegarder le PDF avec un nom de fichier sécurisé
     const fileName = SecurityUtils.generateSecureFileName(secureMandate.referenceNumber);
     doc.save(fileName);
     onClose();
   };
 
-  // Utilisation de useEffect pour générer le PDF après le rendu
   useEffect(() => {
     const generatePDFAsync = async () => {
       try {
         await generatePDF();
       } catch (error) {
         console.error('Erreur génération PDF:', error);
-        // Afficher un message d'erreur à l'utilisateur si possible
         if (error instanceof Error) {
-          // Ici on pourrait ajouter une notification ou un toast d'erreur
           alert(`Erreur lors de la génération du PDF: ${error.message}`);
         } else {
           alert('Erreur lors de la génération du PDF');

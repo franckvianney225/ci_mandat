@@ -57,6 +57,7 @@ export declare class MandatesService {
         pdfBuffer: Buffer;
         fileName: string;
     }>;
+    remove(id: string): Promise<void>;
     private sendSubmissionConfirmationEmail;
     private sendMandateApprovedEmail;
     private sendMandateRejectedEmail;

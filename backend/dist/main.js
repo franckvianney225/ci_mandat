@@ -49,7 +49,9 @@ async function bootstrap() {
             'Authorization',
             'X-Requested-With',
             'X-CSRF-Token',
+            'x-recaptcha-token',
         ],
+        exposedHeaders: ['x-recaptcha-token'],
     });
     const config = new swagger_1.DocumentBuilder()
         .setTitle('CI-Mandat API')

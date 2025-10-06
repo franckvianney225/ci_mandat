@@ -41,4 +41,13 @@ export declare class MandatesController {
     validateBySuperAdmin(id: string, req: any): Promise<import("../../entities/mandate.entity").Mandate>;
     reject(id: string, rejectMandateDto: RejectMandateDto, req: any): Promise<import("../../entities/mandate.entity").Mandate>;
     generatePDF(id: string, res: Response): Promise<void>;
+    remove(id: string): Promise<{
+        success: boolean;
+        message: string;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: any;
+        message?: undefined;
+    }>;
 }

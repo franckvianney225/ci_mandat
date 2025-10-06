@@ -11,11 +11,8 @@ export declare enum MandateStatus {
 export declare class Mandate {
     id: string;
     client: User;
-    clientId: string;
     adminApprover: User;
-    adminApproverId: string;
     superAdminApprover: User;
-    superAdminApproverId: string;
     title: string;
     description: string;
     referenceNumber: string;

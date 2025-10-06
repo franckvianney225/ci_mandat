@@ -94,28 +94,19 @@ __decorate([
 __decorate([
     (0, typeorm_1.ManyToOne)(() => user_entity_1.User, (user) => user.mandates, { nullable: true }),
     (0, typeorm_1.Index)(),
+    (0, typeorm_1.JoinColumn)({ name: 'client_id' }),
     __metadata("design:type", user_entity_1.User)
 ], Mandate.prototype, "client", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Mandate.prototype, "clientId", void 0);
-__decorate([
     (0, typeorm_1.ManyToOne)(() => user_entity_1.User, (user) => user.approvedMandatesAsAdmin, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'admin_approver_id' }),
     __metadata("design:type", user_entity_1.User)
 ], Mandate.prototype, "adminApprover", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Mandate.prototype, "adminApproverId", void 0);
-__decorate([
     (0, typeorm_1.ManyToOne)(() => user_entity_1.User, (user) => user.approvedMandatesAsSuperAdmin, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'super_admin_approver_id' }),
     __metadata("design:type", user_entity_1.User)
 ], Mandate.prototype, "superAdminApprover", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Mandate.prototype, "superAdminApproverId", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 255 }),
     __metadata("design:type", String)
@@ -125,12 +116,12 @@ __decorate([
     __metadata("design:type", String)
 ], Mandate.prototype, "description", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 50, unique: true }),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 50, unique: true, name: 'reference_number' }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Mandate.prototype, "referenceNumber", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'jsonb' }),
+    (0, typeorm_1.Column)({ type: 'jsonb', name: 'form_data' }),
     __metadata("design:type", Object)
 ], Mandate.prototype, "formData", void 0);
 __decorate([
@@ -143,44 +134,44 @@ __decorate([
     __metadata("design:type", String)
 ], Mandate.prototype, "status", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true, name: 'admin_approved_at' }),
     __metadata("design:type", Date)
 ], Mandate.prototype, "adminApprovedAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true, name: 'super_admin_approved_at' }),
     __metadata("design:type", Date)
 ], Mandate.prototype, "superAdminApprovedAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true, name: 'rejected_at' }),
     __metadata("design:type", Date)
 ], Mandate.prototype, "rejectedAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'text', nullable: true, name: 'rejection_reason' }),
     __metadata("design:type", String)
 ], Mandate.prototype, "rejectionReason", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'boolean', default: false }),
+    (0, typeorm_1.Column)({ type: 'boolean', default: false, name: 'pdf_generated' }),
     __metadata("design:type", Boolean)
 ], Mandate.prototype, "pdfGenerated", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 500, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 500, nullable: true, name: 'pdf_url' }),
     __metadata("design:type", String)
 ], Mandate.prototype, "pdfUrl", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true, name: 'pdf_generated_at' }),
     __metadata("design:type", Date)
 ], Mandate.prototype, "pdfGeneratedAt", void 0);
 __decorate([
-    (0, typeorm_1.CreateDateColumn)({ type: 'timestamptz' }),
+    (0, typeorm_1.CreateDateColumn)({ type: 'timestamptz', name: 'created_at' }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", Date)
 ], Mandate.prototype, "createdAt", void 0);
 __decorate([
-    (0, typeorm_1.UpdateDateColumn)({ type: 'timestamptz' }),
+    (0, typeorm_1.UpdateDateColumn)({ type: 'timestamptz', name: 'updated_at' }),
     __metadata("design:type", Date)
 ], Mandate.prototype, "updatedAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true, name: 'expires_at' }),
     __metadata("design:type", Date)
 ], Mandate.prototype, "expiresAt", void 0);
 __decorate([

@@ -323,6 +323,22 @@ export class MandatesService {
   }
 
   /**
+   * Supprime un mandat
+   */
+  async remove(id: string): Promise<void> {
+    const mandate = await this.findOne(id);
+    
+    // Vérifier si le mandat peut être supprimé
+    // Par exemple, on pourrait vouloir empêcher la suppression des mandats déjà validés
+    if (mandate.status === MandateStatus.SUPER_ADMIN_APPROVED) {
+      throw new BadRequestException('Impossible de supprimer un mandat déjà validé par le super administrateur');
+    }
+    
+    await this.mandatesRepository.remove(mandate);
+    this.logger.log(`Mandat ${id} supprimé avec succès`);
+  }
+
+  /**
    * Envoie l'email de confirmation de soumission au demandeur
    */
   private async sendSubmissionConfirmationEmail(mandate: Mandate): Promise<void> {
