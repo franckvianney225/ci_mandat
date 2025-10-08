@@ -11,7 +11,10 @@ export class WinstonLogger implements LoggerService {
     const logLevel = this.configService.get<string>('LOG_LEVEL', 'info');
     const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
     const logsDir = this.configService.get<string>('LOGS_DIR', 'logs');
-
+    
+    // En production/Docker, utiliser uniquement la console pour éviter les problèmes de permissions
+    const isDocker = process.env.NODE_ENV === 'production' || process.env.DOCKER === 'true';
+    
     // Configuration des transports
     const transports: winston.transport[] = [];
 
@@ -31,38 +34,59 @@ export class WinstonLogger implements LoggerService {
       })
     );
 
-    // Transport fichier pour la production
-    if (nodeEnv === 'production') {
-      transports.push(
-        new winston.transports.File({
-          filename: path.join(logsDir, 'error.log'),
-          level: 'error',
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.json()
-          ),
-        }),
-        new winston.transports.File({
-          filename: path.join(logsDir, 'combined.log'),
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.json()
-          ),
-        })
-      );
+    // Transport fichier uniquement si PAS en Docker et en production
+    if (nodeEnv === 'production' && !isDocker) {
+      try {
+        const fs = require('fs');
+        if (!fs.existsSync(logsDir)) {
+          fs.mkdirSync(logsDir, { recursive: true });
+        }
+        
+        transports.push(
+          new winston.transports.File({
+            filename: path.join(logsDir, 'error.log'),
+            level: 'error',
+            format: winston.format.combine(
+              winston.format.timestamp(),
+              winston.format.json()
+            ),
+          }),
+          new winston.transports.File({
+            filename: path.join(logsDir, 'combined.log'),
+            format: winston.format.combine(
+              winston.format.timestamp(),
+              winston.format.json()
+            ),
+          })
+        );
+      } catch (error) {
+        console.warn(`Impossible de configurer les logs fichiers: ${error.message}`);
+      }
     }
 
-    // Transport fichier pour les requêtes HTTP
-    transports.push(
-      new winston.transports.File({
-        filename: path.join(logsDir, 'http.log'),
-        level: 'http',
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.json()
-        ),
-      })
-    );
+    // Transport fichier HTTP uniquement si PAS en Docker
+    if (!isDocker) {
+      try {
+        const fs = require('fs');
+        if (!fs.existsSync(logsDir)) {
+          fs.mkdirSync(logsDir, { recursive: true });
+        }
+        
+        transports.push(
+          new winston.transports.File({
+            filename: path.join(logsDir, 'http.log'),
+            level: 'http',
+            format: winston.format.combine(
+              winston.format.timestamp(),
+              winston.format.json()
+            ),
+          })
+        );
+      } catch (error) {
+        console.warn(`Impossible de configurer le log HTTP: ${error.message}`);
+      }
+    }
+
 
     this.logger = winston.createLogger({
       level: logLevel,

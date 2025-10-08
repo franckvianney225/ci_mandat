@@ -264,22 +264,30 @@ let MandatesService = MandatesService_1 = class MandatesService {
     async sendMandateApprovedEmail(mandate) {
         try {
             this.logger.log(`Début de l'envoi de l'email de validation pour le mandat: ${mandate.id}`);
-            this.logger.log(`Génération du PDF pour le mandat: ${mandate.id}`);
-            const { pdfBuffer, fileName } = await this.generatePDF(mandate.id);
-            this.logger.log(`PDF généré avec succès: ${fileName}, taille: ${pdfBuffer.length} bytes`);
-            this.logger.log(`Envoi de l'email à: ${mandate.formData.email}`);
-            const emailSent = await this.emailService.sendEmail(email_service_1.EmailType.MANDATE_APPROVED, mandate.formData.email, {
-                mandate,
-                attachments: [
+            let attachments = [];
+            try {
+                this.logger.log(`Génération du PDF pour le mandat: ${mandate.id}`);
+                const { pdfBuffer, fileName } = await this.generatePDF(mandate.id);
+                this.logger.log(`PDF généré avec succès: ${fileName}, taille: ${pdfBuffer.length} bytes`);
+                attachments = [
                     {
                         filename: fileName,
                         content: pdfBuffer,
                         contentType: 'application/pdf'
                     }
-                ]
+                ];
+            }
+            catch (pdfError) {
+                this.logger.error(`Erreur lors de la génération du PDF pour le mandat ${mandate.id}:`, pdfError);
+                this.logger.warn(`Envoi de l'email sans pièce jointe PDF pour le mandat: ${mandate.id}`);
+            }
+            this.logger.log(`Envoi de l'email à: ${mandate.formData.email}`);
+            const emailSent = await this.emailService.sendEmail(email_service_1.EmailType.MANDATE_APPROVED, mandate.formData.email, {
+                mandate,
+                attachments
             });
             if (emailSent) {
-                this.logger.log(`Email de validation avec PDF envoyé au demandeur: ${mandate.formData.email}`);
+                this.logger.log(`Email de validation ${attachments.length > 0 ? 'avec PDF' : 'sans PDF'} envoyé au demandeur: ${mandate.formData.email}`);
             }
             else {
                 this.logger.warn(`Échec de l'envoi de l'email de validation à: ${mandate.formData.email}`);

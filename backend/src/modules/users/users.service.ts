@@ -42,48 +42,10 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-  ) {
-    this.createDefaultAdmin();
-  }
+  ) {}
 
-  async createDefaultAdmin() {
-    try {
-      const defaultAdminEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@mandat.com';
-      const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admincimandat20_25';
-      
-      // Vérifier si l'admin par défaut existe déjà
-      const existingAdmin = await this.findByEmail(defaultAdminEmail);
-      if (existingAdmin) {
-        console.log('✅ Compte administrateur par défaut existe déjà');
-        return;
-      }
-
-      // Créer l'admin par défaut
-      const saltRounds = 12;
-      const passwordHash = await bcrypt.hash(defaultAdminPassword, saltRounds);
-
-      const adminUser = this.usersRepository.create({
-        email: defaultAdminEmail,
-        passwordHash,
-        role: UserRole.SUPER_ADMIN,
-        status: UserStatus.ACTIVE,
-        personalData: {
-          firstName: 'Administrateur',
-          lastName: 'Système',
-          phone: '+225 00 00 00 00',
-          department: 'Administration'
-        }
-      });
-
-      await this.usersRepository.save(adminUser);
-      console.log('✅ Compte administrateur par défaut créé avec succès');
-      console.log(`📧 Email: ${defaultAdminEmail}`);
-      console.log('🔑 Mot de passe: [CONFIGURÉ DANS LES VARIABLES D\'ENVIRONNEMENT]');
-      
-    } catch (error) {
-      console.error('❌ Erreur lors de la création du compte administrateur par défaut:', error);
-    }
-  }
+  // Note: L'initialisation de l'admin se fait maintenant via le script init-admin.js
+  // qui s'exécute avant le démarrage de l'application
 
   async findAll(filters: UserFilters = {}) {
     const {

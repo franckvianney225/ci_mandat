@@ -12,11 +12,15 @@ interface MandateData {
   referenceNumber: string;
   status: string;
   createdAt: string;
+  fonction?: string;
+  formData?: {
+    fonction?: string;
+  };
 }
 
 interface WorkerMessage {
   type: 'generate' | 'status' | 'error' | 'complete';
-  data?: any;
+  data?: unknown;
   progress?: number;
 }
 
@@ -196,16 +200,16 @@ async function generatePDF(mandate: MandateData): Promise<{ pdfBlob: Blob; fileN
   
   yPos += 40;
 
-  // Sous-titre
+  // Sous-titre avec fonction récupérée
+  const fonction = secureMandate.formData?.fonction || secureMandate.fonction || 'fonction';
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...primaryColor);
-  doc.text('MANDAT DU REPRÉSENTANT PRINCIPAL', pageWidth / 2, yPos, { align: 'center' });
-  doc.text('DANS LE BUREAU DE VOTE', pageWidth / 2, yPos + 6, { align: 'center' });
+  doc.text(`MANDAT (${fonction}) DE CAMPAGNE`, pageWidth / 2, yPos, { align: 'center' });
   
   yPos += 20;
 
-  // Corps du document
+  // Corps du document - Texte spécifique fourni
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...primaryColor);
@@ -215,45 +219,83 @@ async function generatePDF(mandate: MandateData): Promise<{ pdfBlob: Blob; fileN
   const rightMargin = pageWidth - 30;
   const textWidth = rightMargin - leftMargin;
 
-  // Paragraphe 1
-  doc.text('Conformément aux dispositions des articles 35 nouveau et 38 du code électoral :', leftMargin, yPos, { maxWidth: textWidth });
-  yPos += lineHeight * 2;
+  // Fonction pour dessiner du texte avec gestion de largeur fixe et formatage
+  const drawFixedWidthTextWithBold = (text: string, x: number, y: number, maxWidth: number) => {
+    const words = text.split(' ');
+    let line = '';
+    let currentY = y;
+    
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line + words[i] + ' ';
+      const testWidth = doc.getStringUnitWidth(testLine) * doc.getFontSize() / doc.internal.scaleFactor;
+      
+      if (testWidth > maxWidth && i > 0) {
+        doc.text(line, x, currentY);
+        line = words[i] + ' ';
+        currentY += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    
+    if (line) {
+      doc.text(line, x, currentY);
+    }
+    
+    return currentY + lineHeight;
+  };
 
-  // Paragraphe 2
+  // Ligne 1
   doc.setFont('helvetica', 'bold');
-  doc.text('ALLASSANE OUATTARA', leftMargin, yPos);
+  doc.text('Monsieur KALIL KONATE,', leftMargin, yPos);
   doc.setFont('helvetica', 'normal');
-  doc.text(' candidat à l\'élection présidentielle du 25 octobre 2025,', leftMargin + (doc.getStringUnitWidth('ALLASSANE OUATTARA ') * doc.getFontSize() / doc.internal.scaleFactor), yPos);
-  yPos += lineHeight * 2;
-
-  // Paragraphe 3
-  doc.text('donne mandat à Mme/M................................................................................', leftMargin, yPos);
-  yPos += lineHeight * 2;
-
-  // Paragraphe 4
-  doc.text('pour le représenter dans le Bureau de vote n°................................................................', leftMargin, yPos);
-  yPos += lineHeight * 2;
-
-  // Paragraphe 5
-  doc.text('du Lieu de Vote........................................................................................................................', leftMargin, yPos);
-  yPos += lineHeight * 2;
-
-  // Paragraphe 6
-  doc.text('de la circonscription électorale d\'', leftMargin, yPos);
-  doc.setFont('helvetica', 'bold');
-  doc.text(secureMandate.circonscription, leftMargin + (doc.getStringUnitWidth('de la circonscription électorale d\'') * doc.getFontSize() / doc.internal.scaleFactor), yPos);
-  doc.setFont('helvetica', 'normal');
-  doc.text('.', leftMargin + (doc.getStringUnitWidth('de la circonscription électorale d\'' + secureMandate.circonscription) * doc.getFontSize() / doc.internal.scaleFactor), yPos);
-  yPos += lineHeight * 2;
-
-  // Paragraphe 7
-  doc.text('Le présent mandat lui est délivré en qualité de Représentant(e) Principal(e) pour servir', leftMargin, yPos);
   yPos += lineHeight;
-  doc.text('les intérêts du Candidat ', leftMargin, yPos);
+
+  // Ligne 2
+  doc.text('Directeur regional de la Campagne Associé de S.E.M.', leftMargin, yPos);
+  yPos += lineHeight;
+
+  // Ligne 3
   doc.setFont('helvetica', 'bold');
-  doc.text(`${secureMandate.prenom} ${secureMandate.nom}`, leftMargin + (doc.getStringUnitWidth('les intérêts du Candidat ') * doc.getFontSize() / doc.internal.scaleFactor), yPos);
+  doc.text('ALLASSANE OUATTARA,', leftMargin, yPos);
   doc.setFont('helvetica', 'normal');
-  doc.text(' et en valoir ce que de droit.', leftMargin + (doc.getStringUnitWidth('les intérêts du Candidat ' + secureMandate.prenom + ' ' + secureMandate.nom) * doc.getFontSize() / doc.internal.scaleFactor), yPos);
+  yPos += lineHeight;
+
+  // Ligne 4
+  doc.text('candidat du Rassemblement des Houphouétistes pour la Démocratie et la Paix (RHDP)', leftMargin, yPos);
+  yPos += lineHeight;
+
+  // Ligne 5
+  doc.text('à l\'Election du Président de la République du 25 Octobre 2025', leftMargin, yPos);
+  yPos += lineHeight;
+
+  // Ligne 6
+  doc.text('donne mandat à:', leftMargin, yPos);
+  yPos += lineHeight;
+
+  // Ligne 7
+  doc.setFont('helvetica', 'bold');
+  doc.text(`M/mme ${secureMandate.prenom} ${secureMandate.nom}`, leftMargin, yPos);
+  doc.setFont('helvetica', 'normal');
+  yPos += lineHeight;
+
+  // Ligne 8
+  doc.text(`en qualité d'animateur de sa campagne dans la circomcription elcetorare de la Region du ${secureMandate.circonscription}`, leftMargin, yPos);
+  yPos += lineHeight;
+
+  // Ligne 9
+  doc.text('a la peridoe du 01 octobre 2025 au 20 octore 2025', leftMargin, yPos);
+  yPos += lineHeight * 2;
+
+  // Ligne finale
+  doc.text('en foi de quoi ; le present mandat lui est delivré pour servir les interet du Candidat', leftMargin, yPos);
+  yPos += lineHeight;
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 64, 175);
+  doc.text('Alassane OUATTARA', leftMargin, yPos);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...primaryColor);
+  doc.text(' et valoir ce que de droit.', leftMargin + (doc.getStringUnitWidth('Alassane OUATTARA ') * doc.getFontSize() / doc.internal.scaleFactor), yPos);
   
   yPos += lineHeight * 3;
 
@@ -337,7 +379,7 @@ self.addEventListener('message', async (event: MessageEvent<{ type: 'generate'; 
 // Types pour TypeScript
 interface WorkerGlobalScope extends WindowOrWorkerGlobalScope {
   location: Location;
-  postMessage(message: any, transfer?: Transferable[]): void;
+  postMessage(message: unknown, transfer?: Transferable[]): void;
   addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
 }
 

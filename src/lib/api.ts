@@ -103,12 +103,29 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
+    // Créer un objet headers simple
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // Ajouter les headers existants
+    if (options.headers) {
+      if (options.headers instanceof Headers) {
+        options.headers.forEach((value, key) => {
+          headers[key] = value;
+        });
+      } else if (Array.isArray(options.headers)) {
+        options.headers.forEach(([key, value]) => {
+          headers[key] = value;
+        });
+      } else {
+        Object.assign(headers, options.headers);
+      }
+    }
+
     const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      credentials: 'include', // Toujours envoyer les cookies
+      headers,
+      credentials: 'include', // ✅ Envoie automatiquement les cookies HttpOnly
       ...options,
     };
 
@@ -117,7 +134,7 @@ class ApiClient {
       
       if (!response.ok) {
         // Récupérer les données d'erreur détaillées du backend
-        let errorData: any = null;
+        let errorData: { message?: string } = { message: `HTTP error! status: ${response.status}` };
         try {
           errorData = await response.json();
         } catch {
@@ -127,7 +144,7 @@ class ApiClient {
         
         // Créer une erreur avec les données détaillées
         const error = new ApiError(response.status, errorData.message || `HTTP error! status: ${response.status}`);
-        (error as any).responseData = errorData;
+        (error as ApiError & { responseData?: { message?: string } }).responseData = errorData;
         throw error;
       }
 

@@ -4,7 +4,7 @@ import { Fragment, useState } from "react";
 import ValidateConfirm from "./ValidateConfirm";
 import RejectConfirm from "./RejectConfirm";
 import { apiClient } from "@/lib/api";
-import PDFMandatGeneratorAsync from "./PDFMandatGeneratorAsync";
+import { generateMandatePDF } from "./PDFMandatGenerator";
 
 interface Request {
   id: string;
@@ -16,6 +16,10 @@ interface Request {
   status: "pending" | "validated" | "rejected";
   createdAt: string;
   referenceNumber: string;
+  fonction?: string;
+  formData?: {
+    fonction?: string;
+  };
 }
 
 interface ClientDetailsModalProps {
@@ -77,10 +81,15 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
         circonscription: request.circonscription,
         referenceNumber: request.referenceNumber,
         status: request.status,
-        createdAt: request.createdAt
+        createdAt: request.createdAt,
+        fonction: request.fonction,
+        formData: request.formData
       };
       
-      // La génération sera gérée par PDFMandatGeneratorAsync
+      // Générer le PDF directement avec PDFMandatGenerator
+      generateMandatePDF(mandateData);
+      
+      setIsGeneratingPDF(false);
     } catch (error) {
       console.error('Erreur lors de la génération du PDF:', error);
       alert('Erreur lors de la génération du PDF.');
@@ -329,27 +338,21 @@ export default function ClientDetailsModal({ isOpen, onClose, request, onStatusC
         } : null}
       />
 
-      {/* Composant de génération PDF asynchrone */}
+      {/* Indicateur de génération PDF */}
       {isGeneratingPDF && (
-        <PDFMandatGeneratorAsync
-          mandate={{
-            id: request.id,
-            nom: request.nom,
-            prenom: request.prenom,
-            email: request.email,
-            telephone: request.telephone,
-            circonscription: request.circonscription,
-            referenceNumber: request.referenceNumber,
-            status: request.status,
-            createdAt: request.createdAt
-          }}
-          onClose={() => setIsGeneratingPDF(false)}
-          onProgress={(progress) => console.log(`Progression PDF: ${progress}%`)}
-          onError={(error) => {
-            console.error('Erreur génération PDF:', error);
-            alert(`Erreur lors de la génération du PDF: ${error}`);
-          }}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Génération du PDF en cours...
+              </h3>
+              <p className="text-sm text-gray-600">
+                Le téléchargement va commencer automatiquement.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </Fragment>
   );

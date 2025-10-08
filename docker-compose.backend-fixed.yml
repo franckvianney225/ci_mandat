@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # Backend NestJS - FIXED
+  backend:
+    image: ci_mandat_backend
+    container_name: ci_mandat_backend_prod_fixed
+    environment:
+      # Environnement
+      NODE_ENV: production
+      PORT: 3001
+      
+      # Base de données
+      DATABASE_URL: postgresql://ci_mandat_user:CiMandatProd2024SecureDBPass@ci_mandat_postgres_prod:5432/ci_mandat_db?sslmode=disable
+      
+      # Authentification JWT
+      JWT_ACCESS_SECRET: jwt_access_secret_key_12345678901234567890
+      JWT_REFRESH_SECRET: jwt_refresh_secret_key_12345678901234567890
+      JWT_ACCESS_EXPIRES: 15m
+      JWT_REFRESH_EXPIRES: 7d
+      
+      # Chiffrement
+      ENCRYPTION_KEY: RB2Z3FC2IrUAzGj1o2lbO4Ygad1JWR4ttzo08EZPIm5X75uVUuGm8AlqiCZkgdi1
+      DATA_ENCRYPTION_IV: w5qHB371p2qYk5LlWjQ5jg7zl637Q0F4
+      
+      # Redis
+      REDIS_HOST: ci_mandat_redis_prod
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis_password_123
+      
+      # URLs
+      FRONTEND_URL: http://164.160.40.182:3000
+      BACKEND_URL: http://164.160.40.182:3001
+      ALLOWED_ORIGINS: http://164.160.40.182:3000
+      
+      # Sécurité
+      RATE_LIMIT_WINDOW: 900000
+      MAX_LOGIN_ATTEMPTS: 5
+      SESSION_TIMEOUT: 3600000
+      
+      # Logging
+      LOG_LEVEL: info
+      LOG_FORMAT: json
+      
+      # Performance
+      NODE_OPTIONS: "--max-old-space-size=512"
+    ports:
+      - "3001:3001"
+    networks:
+      - ci_mandat_network_prod
+    restart: unless-stopped
+
+networks:
+  ci_mandat_network_prod:
+    external: true
+    name: ci_mandat_prod_ci_mandat_network_prod

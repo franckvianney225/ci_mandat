@@ -20,7 +20,7 @@ COPY package*.json ./
 COPY tsconfig.json ./
 
 # Installer TOUTES les dépendances (y compris devDependencies) pour le build
-RUN npm ci
+RUN npm ci --registry=https://registry.npmjs.org/ --fetch-retries=5 --fetch-timeout=60000
 
 # Copier le code source
 COPY src/ ./src/
@@ -55,9 +55,11 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S backend -u 1001
 
-# Créer le répertoire pour les PDFs
+# Créer les répertoires pour les PDFs et logs
 RUN mkdir -p /app/storage/pdfs && \
-    chown -R backend:nodejs /app/storage
+    mkdir -p /app/logs && \
+    chown -R backend:nodejs /app/storage && \
+    chown -R backend:nodejs /app/logs
 
 WORKDIR /app
 
@@ -87,5 +89,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Utiliser dumb-init pour une meilleure gestion des signaux
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
-# Commande de démarrage
-CMD ["node", "dist/main.js"]
+# Commande de démarrage avec initialisation de l'admin
+CMD ["sh", "-c", "node dist/scripts/init-admin.js && node dist/main.js"]

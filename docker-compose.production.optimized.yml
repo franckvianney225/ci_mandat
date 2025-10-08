@@ -231,10 +231,5 @@ volumes:
 
 networks:
   ci_mandat_network_prod:
-    driver: bridge
-    # Configuration de sécurité réseau
-    driver_opts:
-      com.docker.network.bridge.name: ci_mandat_prod
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
+    external: true
+    name: ci_mandat_prod_ci_mandat_network_prod

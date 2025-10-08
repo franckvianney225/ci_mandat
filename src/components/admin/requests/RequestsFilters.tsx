@@ -30,13 +30,7 @@ export default function RequestsFilters({
   onCreateRequest
 }: RequestsFiltersProps) {
   const departments = [
-    "Abidjan-Plateau", "Abobo", "Adjamé", "Anyama", "Attécoubé", "Bingerville", "Cocody", "Koumassi", "Marcory", 
-    "Port-Bouët", "Treichville", "Yopougon", "Abengourou", "Aboisso", "Adiaké", "Agnibilékrou", "Akoupé", 
-    "Alépé", "Bocanda", "Bondoukou", "Bongouanou", "Bouaflé", "Bouaké", "Bouna", "Boundiali", "Dabakala", 
-    "Dabou", "Daloa", "Danané", "Daoukro", "Dimbokro", "Divo", "Duékoué", "Ferkessédougou", "Gagnoa", 
-    "Grand-Bassam", "Grand-Lahou", "Guiglo", "Issia", "Jacqueville", "Katiola", "Korhogo", "Lakota", "Man", 
-    "Mankono", "Odienné", "Oumé", "Sakassou", "San-Pédro", "Sassandra", "Séguéla", "Sinfra", "Soubré", 
-    "Tabou", "Tanda", "Tiassalé", "Touba", "Toumodi", "Vavoua", "Yamoussoukro", "Zuénoula"
+   "BASSAWA", "BONIEREDOUGOU", "DABAKALA", "FOUMBOLO", "SATAMA-SOKORO", "SATAMA-SOKOURA", "SOKALA-SOBARA", "TENDENE-BAMBARASSO", "YAOSSEDOUGOU", "NIEMENE", "FRONAN", "KATIOLA", "TIMBE", "NIAKARAMADOUGOU", "TAFIRE", "TORTIYA", "ARIKOKAHA", "BADIKAHA", "NIEDEKAHA"
   ];
 
   return (

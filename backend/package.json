@@ -19,7 +19,8 @@
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
     "db:setup": "npm run migration:run",
-    "db:seed": "ts-node scripts/seed.ts"
+    "db:seed": "ts-node scripts/seed.ts",
+    "init:admin": "node dist/scripts/init-admin.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

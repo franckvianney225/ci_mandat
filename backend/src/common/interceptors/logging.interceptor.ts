@@ -57,7 +57,7 @@ export class LoggingInterceptor implements NestInterceptor {
       body: this.sanitizeBody(request.body),
     };
 
-    this.logger.http('Requête HTTP reçue', logData);
+    this.logger.log('Requête HTTP reçue', 'LoggingInterceptor', logData);
   }
 
   private logResponse(
@@ -80,7 +80,7 @@ export class LoggingInterceptor implements NestInterceptor {
     if (response.statusCode >= 400) {
       this.logger.warn('Réponse HTTP avec erreur', 'LoggingInterceptor', logData);
     } else {
-      this.logger.http('Réponse HTTP envoyée', logData);
+      this.logger.log('Réponse HTTP envoyée', 'LoggingInterceptor', logData);
     }
   }
 

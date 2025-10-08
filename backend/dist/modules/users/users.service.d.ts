@@ -32,7 +32,6 @@ interface UserFilters {
 export declare class UsersService {
     private usersRepository;
     constructor(usersRepository: Repository<User>);
-    createDefaultAdmin(): Promise<void>;
     findAll(filters?: UserFilters): Promise<{
         data: User[];
         total: number;
