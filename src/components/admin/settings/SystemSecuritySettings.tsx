@@ -5,19 +5,19 @@ import GeneralSettings from "./GeneralSettings";
 import SystemOptions from "./SystemOptions";
 
 interface SystemSecurityConfig {
-  // Configuration système
+  // Configuration système (correspond au backend)
   appName: string;
   appUrl: string;
   maintenanceMode: boolean;
   debugMode: boolean;
+  sessionTimeout: number;
+  maxLoginAttempts: number;
   enableAuditLogs: boolean;
   enableEmailNotifications: boolean;
   backupFrequency: string;
   dataRetentionDays: number;
   
-  // Configuration sécurité
-  sessionTimeout: number;
-  maxLoginAttempts: number;
+  // Configuration sécurité (frontend seulement - non sauvegardée)
   passwordMinLength: number;
   passwordRequireUppercase: boolean;
   passwordRequireLowercase: boolean;
@@ -65,11 +65,23 @@ export default function SystemSecuritySettings() {
   const loadSystemConfig = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/v1/settings/system');
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        setConfig(result.data);
+      // Utiliser fetch directement avec l'URL complète
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+      const response = await fetch(`${API_BASE_URL}/settings/system`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          // Fusionner les données du backend avec les valeurs par défaut du frontend
+          setConfig({
+            ...config, // Garder les valeurs frontend par défaut
+            ...result.data // Remplacer par les données du backend
+          });
+        }
+      } else {
+        console.error("Erreur HTTP:", response.status);
       }
     } catch (error) {
       console.error("Erreur lors du chargement de la configuration:", error);
@@ -84,24 +96,41 @@ export default function SystemSecuritySettings() {
 
   const handleSave = async () => {
     try {
-      const response = await fetch('/api/v1/settings/system', {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+      
+      // Préparer les données pour le backend (uniquement les champs supportés)
+      const backendConfig = {
+        appName: config.appName,
+        appUrl: config.appUrl,
+        maintenanceMode: config.maintenanceMode,
+        debugMode: config.debugMode,
+        sessionTimeout: config.sessionTimeout,
+        maxLoginAttempts: config.maxLoginAttempts,
+        enableAuditLogs: config.enableAuditLogs,
+        enableEmailNotifications: config.enableEmailNotifications,
+        backupFrequency: config.backupFrequency,
+        dataRetentionDays: config.dataRetentionDays,
+      };
+
+      const response = await fetch(`${API_BASE_URL}/settings/system`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(config),
+        credentials: 'include',
+        body: JSON.stringify(backendConfig),
       });
 
       const result = await response.json();
 
       if (result.success) {
-        alert("Configuration système et sécurité sauvegardée avec succès !");
+        alert("Configuration système sauvegardée avec succès !");
       } else {
         alert(`Erreur lors de la sauvegarde: ${result.error}`);
       }
     } catch (error) {
       console.error("Erreur lors de la sauvegarde:", error);
-      alert("Erreur lors de la sauvegarde de la configuration");
+      alert("Erreur lors de la sauvegarde de la configuration. Vérifiez que le backend est démarré.");
     }
   };
 

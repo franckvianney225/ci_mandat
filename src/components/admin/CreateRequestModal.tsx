@@ -35,6 +35,7 @@ export default function CreateRequestModal({ isOpen, onClose, onSuccess }: Creat
     setError(null);
 
     try {
+      // Envoyer la requête sans token reCAPTCHA (désactivé)
       const response = await apiClient.createMandate(formData);
       
       if (response.success) {

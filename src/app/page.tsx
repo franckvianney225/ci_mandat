@@ -294,7 +294,8 @@ function MandateForm() {
                       required
                       className={getInputClassName("circonscription")}
                     >
-                     <option value="BASSAWA">BASSAWA</option>
+                    <option value="">Sélectionnez une circonscription</option>
+                    <option value="BASSAWA">BASSAWA</option>
                     <option value="BONIEREDOUGOU">BONIEREDOUGOU</option>
                     <option value="DABAKALA">DABAKALA</option>
                     <option value="FOUMBOLO">FOUMBOLO</option>

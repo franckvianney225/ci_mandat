@@ -39,12 +39,9 @@ export class RecaptchaService {
    * @returns Promise<boolean> true si la vérification est réussie
    */
   async verifyToken(token: string, expectedAction?: string): Promise<boolean> {
-    // En développement, on peut désactiver temporairement la vérification pour les tests
-    // Mais il est préférable de la laisser active pour tester le flux complet
-    // if (this.configService.get<string>('NODE_ENV') === 'development') {
-    //   this.logger.debug('Mode développement - Vérification reCAPTCHA ignorée');
-    //   return true;
-    // }
+    // reCAPTCHA désactivé dans tous les environnements
+    this.logger.debug('reCAPTCHA désactivé - Vérification ignorée');
+    return true;
     
     // Si la clé secrète n'est pas configurée, on désactive la vérification
     if (!this.secretKey) {

@@ -1,0 +1,240 @@
+version: '3.8'
+
+services:
+  # Base de données PostgreSQL (accès local uniquement) - OPTIMISÉ
+  postgres:
+    image: postgres:15-alpine
+    container_name: ci_mandat_postgres_prod
+    environment:
+      POSTGRES_DB: ci_mandat_db
+      POSTGRES_USER: ci_mandat_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+      # Configuration de sécurité PostgreSQL
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      # Optimisations de performance
+      POSTGRES_SHARED_BUFFERS: "512MB"
+      POSTGRES_EFFECTIVE_CACHE_SIZE: "2GB"
+      POSTGRES_MAX_CONNECTIONS: "200"
+      POSTGRES_WORK_MEM: "8MB"
+      POSTGRES_MAINTENANCE_WORK_MEM: "128MB"
+    ports:
+      # NE PAS EXPOSER LE PORT 5432 - Base de données accessible uniquement en interne
+      - "127.0.0.1:5432:5432"  # Seulement accessible depuis l'hôte local
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    networks:
+      - ci_mandat_network_prod
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ci_mandat_user -d ci_mandat_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Configuration de sécurité supplémentaire
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c max_connections=200
+      -c shared_buffers=512MB
+      -c effective_cache_size=2GB
+      -c maintenance_work_mem=128MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=8MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c log_statement=all
+      -c log_duration=on
+
+  # Cache Redis - OPTIMISÉ
+  redis:
+    image: redis:7-alpine
+    container_name: ci_mandat_redis_prod
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"  # Seulement accessible depuis l'hôte local
+    volumes:
+      - redis_data_prod:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    networks:
+      - ci_mandat_network_prod
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Backend NestJS - OPTIMISÉ
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ci_mandat_backend_prod
+    environment:
+      # Environnement
+      NODE_ENV: production
+      PORT: 3001
+      
+      # Base de données
+      DATABASE_URL: postgresql://ci_mandat_user:${DB_PASSWORD}@postgres:5432/ci_mandat_db
+      
+      # Authentification JWT
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_EXPIRES: 15m
+      JWT_REFRESH_EXPIRES: 7d
+      
+      # Chiffrement
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      DATA_ENCRYPTION_IV: ${DATA_ENCRYPTION_IV}
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      
+      # URLs
+      FRONTEND_URL: ${FRONTEND_URL}
+      BACKEND_URL: ${BACKEND_URL}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      
+      # Sécurité
+      RATE_LIMIT_WINDOW: 900000
+      MAX_LOGIN_ATTEMPTS: 5
+      SESSION_TIMEOUT: 3600000
+      
+      # Logging
+      LOG_LEVEL: info
+      LOG_FORMAT: json
+      
+      # Performance
+      NODE_OPTIONS: "--max-old-space-size=512"
+    ports:
+      - "3001:3001"
+    volumes:
+      - pdf_storage_prod:/app/storage/pdfs
+      - backend_logs:/app/logs
+    networks:
+      - ci_mandat_network_prod
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Limites de ressources
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
+
+  # Frontend Next.js - OPTIMISÉ
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: ci_mandat_frontend_prod
+    environment:
+      # Configuration Next.js
+      NODE_ENV: production
+      PORT: 3000
+      
+      # URL du backend
+      NEXT_PUBLIC_API_URL: ${BACKEND_URL}/api/v1
+      NEXT_PUBLIC_FRONTEND_URL: ${FRONTEND_URL}
+      
+      # Performance
+      NODE_OPTIONS: "--max-old-space-size=256"
+    ports:
+      - "3000:3000"
+    networks:
+      - ci_mandat_network_prod
+    restart: unless-stopped
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Limites de ressources
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+
+  # Reverse Proxy Nginx pour HTTPS et Sécurité
+  nginx:
+    image: nginx:alpine
+    container_name: ci_mandat_nginx_prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - nginx_logs:/var/log/nginx
+    networks:
+      - ci_mandat_network_prod
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data_prod:
+    driver: local
+  redis_data_prod:
+    driver: local
+  pdf_storage_prod:
+    driver: local
+  backend_logs:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  ci_mandat_network_prod:
+    driver: bridge
+    # Configuration de sécurité réseau
+    driver_opts:
+      com.docker.network.bridge.name: ci_mandat_prod
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
