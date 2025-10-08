@@ -112,10 +112,22 @@ export default function RequestsManagement({ currentUser }: RequestsManagementPr
 
   // Charger les mandats depuis l'API
   useEffect(() => {
+    let isMounted = true;
+    let lastLoadTime = 0;
+
     const loadMandates = async () => {
+      const now = Date.now();
+      // Éviter les appels trop fréquents (minimum 10 secondes entre les appels)
+      if (now - lastLoadTime < 10000 && lastLoadTime > 0) {
+        console.log('RequestsManagement: Appel API évité (trop récent)');
+        return;
+      }
+
       try {
         setIsLoading(true);
         const response = await apiClient.getMandates();
+        
+        if (!isMounted) return;
         
         if (response.success && response.data) {
           // Transformer les données de l'API en format Request avec mapping des statuts
@@ -136,14 +148,22 @@ export default function RequestsManagement({ currentUser }: RequestsManagementPr
           setError(response.error || "Erreur lors du chargement des mandats");
         }
       } catch (err) {
+        if (!isMounted) return;
         console.error("Erreur lors du chargement des mandats:", err);
         setError("Erreur de connexion au serveur");
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+          lastLoadTime = Date.now();
+        }
       }
     };
 
     loadMandates();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Filtrage des données
@@ -423,9 +443,67 @@ export default function RequestsManagement({ currentUser }: RequestsManagementPr
                   className="block w-full pl-3 pr-10 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-[#FF8200] focus:border-[#FF8200] focus:bg-white transition-all duration-200 appearance-none text-gray-900"
                 >
                   <option value="all">Tous les départements</option>
-                  <option value="X">Département X</option>
-                  <option value="Y">Départments Y</option>
-                  <option value="Z">Départments Z</option>
+                  <option value="Abidjan-Plateau">Abidjan-Plateau</option>
+                      <option value="Abobo">Abobo</option>
+                      <option value="Adjamé">Adjamé</option>
+                      <option value="Anyama">Anyama</option>
+                      <option value="Attécoubé">Attécoubé</option>
+                      <option value="Bingerville">Bingerville</option>
+                      <option value="Cocody">Cocody</option>
+                      <option value="Koumassi">Koumassi</option>
+                      <option value="Marcory">Marcory</option>
+                      <option value="Port-Bouët">Port-Bouët</option>
+                      <option value="Treichville">Treichville</option>
+                      <option value="Yopougon">Yopougon</option>
+                      <option value="Abengourou">Abengourou</option>
+                      <option value="Aboisso">Aboisso</option>
+                      <option value="Adiaké">Adiaké</option>
+                      <option value="Agnibilékrou">Agnibilékrou</option>
+                      <option value="Akoupé">Akoupé</option>
+                      <option value="Alépé">Alépé</option>
+                      <option value="Bocanda">Bocanda</option>
+                      <option value="Bondoukou">Bondoukou</option>
+                      <option value="Bongouanou">Bongouanou</option>
+                      <option value="Bouaflé">Bouaflé</option>
+                      <option value="Bouaké">Bouaké</option>
+                      <option value="Bouna">Bouna</option>
+                      <option value="Boundiali">Boundiali</option>
+                      <option value="Dabakala">Dabakala</option>
+                      <option value="Dabou">Dabou</option>
+                      <option value="Daloa">Daloa</option>
+                      <option value="Danané">Danané</option>
+                      <option value="Daoukro">Daoukro</option>
+                      <option value="Dimbokro">Dimbokro</option>
+                      <option value="Divo">Divo</option>
+                      <option value="Duékoué">Duékoué</option>
+                      <option value="Ferkessédougou">Ferkessédougou</option>
+                      <option value="Gagnoa">Gagnoa</option>
+                      <option value="Grand-Bassam">Grand-Bassam</option>
+                      <option value="Grand-Lahou">Grand-Lahou</option>
+                      <option value="Guiglo">Guiglo</option>
+                      <option value="Issia">Issia</option>
+                      <option value="Jacqueville">Jacqueville</option>
+                      <option value="Katiola">Katiola</option>
+                      <option value="Korhogo">Korhogo</option>
+                      <option value="Lakota">Lakota</option>
+                      <option value="Man">Man</option>
+                      <option value="Mankono">Mankono</option>
+                      <option value="Odienné">Odienné</option>
+                      <option value="Oumé">Oumé</option>
+                      <option value="Sakassou">Sakassou</option>
+                      <option value="San-Pédro">San-Pédro</option>
+                      <option value="Sassandra">Sassandra</option>
+                      <option value="Séguéla">Séguéla</option>
+                      <option value="Sinfra">Sinfra</option>
+                      <option value="Soubré">Soubré</option>
+                      <option value="Tabou">Tabou</option>
+                      <option value="Tanda">Tanda</option>
+                      <option value="Tiassalé">Tiassalé</option>
+                      <option value="Touba">Touba</option>
+                      <option value="Toumodi">Toumodi</option>
+                      <option value="Vavoua">Vavoua</option>
+                      <option value="Yamoussoukro">Yamoussoukro</option>
+                      <option value="Zuénoula">Zuénoula</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

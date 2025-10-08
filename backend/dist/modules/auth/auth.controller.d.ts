@@ -29,11 +29,30 @@ export declare class AuthController {
         access_token: string;
     }>;
     register(registerDto: RegisterDto): Promise<import("../../entities/user.entity").User>;
-    getProfile(req: any): any;
+    getProfile(req: any): Promise<{
+        user: {
+            id: string;
+            email: string;
+            role: UserRole;
+            status: import("../../entities/user.entity").UserStatus;
+            personalData: {
+                firstName: string;
+                lastName: string;
+                phone?: string;
+                department?: string;
+            };
+            createdAt: string;
+            lastLogin: string;
+            loginAttempts: number;
+        };
+    }>;
     changePassword(req: any, changePasswordDto: ChangePasswordDto): Promise<{
         message: string;
     }>;
     updateProfile(req: any, updateProfileDto: UpdateProfileDto): Promise<import("../../entities/user.entity").User>;
+    refreshTokens(req: any, res: Response): Promise<{
+        access_token: string;
+    }>;
     logout(res: Response): Promise<{
         message: string;
     }>;

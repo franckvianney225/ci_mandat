@@ -69,14 +69,24 @@ let AuthService = class AuthService {
     }
     async login(email, password) {
         const user = await this.validateUser(email, password);
-        const payload = {
+        const accessPayload = {
             sub: user.id,
             email: user.email,
             role: user.role,
+            type: 'access',
         };
-        const access_token = this.jwtService.sign(payload);
+        const refreshPayload = {
+            sub: user.id,
+            type: 'refresh',
+        };
+        const access_token = this.jwtService.sign(accessPayload);
+        const refresh_token = this.jwtService.sign(refreshPayload, {
+            secret: process.env.JWT_REFRESH_SECRET || 'fallback-secret-in-development',
+            expiresIn: '7d',
+        });
         return {
             access_token,
+            refresh_token,
             user: {
                 id: user.id,
                 email: user.email,
@@ -129,17 +139,64 @@ let AuthService = class AuthService {
         await this.usersRepository.save(user);
     }
     async updateProfile(userId, profileData) {
+        console.log('🔍 updateProfile appelé avec userId:', userId, 'et profileData:', profileData);
         const user = await this.usersRepository.findOne({ where: { id: userId } });
         if (!user) {
             throw new common_1.UnauthorizedException('Utilisateur non trouvé');
         }
+        console.log('🔄 Mise à jour du profil - Données actuelles:', user.personalData);
+        console.log('🔄 Mise à jour du profil - Nouvelles données:', profileData);
         user.personalData = {
-            ...user.personalData,
             firstName: profileData.firstName,
             lastName: profileData.lastName,
-            phone: profileData.phone,
+            phone: profileData.phone || user.personalData?.phone,
+            department: user.personalData?.department,
         };
-        return await this.usersRepository.save(user);
+        const savedUser = await this.usersRepository.save(user);
+        console.log('✅ Profil mis à jour - Données sauvegardées:', savedUser.personalData);
+        return savedUser;
+    }
+    async refreshTokens(refreshToken) {
+        try {
+            if (!process.env.JWT_REFRESH_SECRET) {
+                throw new common_1.UnauthorizedException('Configuration de sécurité manquante');
+            }
+            const payload = this.jwtService.verify(refreshToken, {
+                secret: process.env.JWT_REFRESH_SECRET,
+            });
+            if (payload.type !== 'refresh') {
+                throw new common_1.UnauthorizedException('Token invalide');
+            }
+            const user = await this.usersRepository.findOne({ where: { id: payload.sub } });
+            if (!user) {
+                throw new common_1.UnauthorizedException('Utilisateur non trouvé');
+            }
+            if (user.status !== user_entity_1.UserStatus.ACTIVE) {
+                throw new common_1.UnauthorizedException('Compte non actif');
+            }
+            const accessPayload = {
+                sub: user.id,
+                email: user.email,
+                role: user.role,
+                type: 'access',
+            };
+            const refreshPayload = {
+                sub: user.id,
+                type: 'refresh',
+            };
+            const newAccessToken = this.jwtService.sign(accessPayload);
+            const newRefreshToken = this.jwtService.sign(refreshPayload, {
+                secret: process.env.JWT_REFRESH_SECRET,
+                expiresIn: '7d',
+            });
+            return {
+                access_token: newAccessToken,
+                refresh_token: newRefreshToken,
+            };
+        }
+        catch (error) {
+            throw new common_1.UnauthorizedException('Refresh token invalide');
+        }
     }
 };
 exports.AuthService = AuthService;

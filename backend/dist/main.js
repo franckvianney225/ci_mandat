@@ -7,6 +7,8 @@ const swagger_1 = require("@nestjs/swagger");
 const helmet_1 = require("helmet");
 const compression = require("compression");
 const cookieParser = require("cookie-parser");
+const csurf = require("csurf");
+const express_1 = require("express");
 const app_module_1 = require("./app.module");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
@@ -16,18 +18,46 @@ async function bootstrap() {
         contentSecurityPolicy: {
             directives: {
                 defaultSrc: [`'self'`],
-                styleSrc: [`'self'`, `'unsafe-inline'`],
-                imgSrc: [`'self'`, 'data:', 'validator.swagger.io'],
-                scriptSrc: [`'self'`, `https: 'unsafe-inline'`],
+                styleSrc: [`'self'`],
+                scriptSrc: [`'self'`],
+                imgSrc: [`'self'`, 'data:'],
+                fontSrc: [`'self'`],
+                connectSrc: [`'self'`],
+                frameSrc: [`'none'`],
+                objectSrc: [`'none'`],
+                baseUri: [`'self'`],
+                formAction: [`'self'`],
             },
         },
     }));
     app.use(compression());
+    app.use((0, express_1.json)({ limit: '1mb' }));
+    app.use((0, express_1.urlencoded)({ limit: '1mb', extended: true }));
     app.use(cookieParser());
+    app.use((req, res, next) => {
+        const excludedPaths = [
+            '/api/v1/auth/login',
+            '/api/v1/auth/logout',
+            '/api/v1/auth/verify',
+            '/api/v1/mandates'
+        ];
+        if (excludedPaths.some(path => req.path.startsWith(path))) {
+            return next();
+        }
+        return csurf({
+            cookie: {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict'
+            }
+        })(req, res, next);
+    });
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,
-        forbidNonWhitelisted: false,
+        forbidNonWhitelisted: true,
         transform: true,
+        forbidUnknownValues: true,
+        validationError: { target: false },
         transformOptions: {
             enableImplicitConversion: true,
         },

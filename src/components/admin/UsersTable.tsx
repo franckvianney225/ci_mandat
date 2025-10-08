@@ -129,12 +129,12 @@ export default function UsersTable({
                     <div className="flex items-center">
                       <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-sm">
                         <span className="text-sm font-semibold text-white">
-                          {user.personalData.firstName[0]}{user.personalData.lastName[0]}
+                          {(user.personalData?.firstName?.[0] || 'U')}{(user.personalData?.lastName?.[0] || 'S')}
                         </span>
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-semibold text-gray-900">
-                          {user.personalData.firstName} {user.personalData.lastName}
+                          {user.personalData?.firstName || 'Prénom'} {user.personalData?.lastName || 'Nom'}
                         </div>
                         <div className="text-xs text-gray-500">ID: {user.id.slice(0, 8)}...</div>
                       </div>

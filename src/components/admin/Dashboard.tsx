@@ -68,6 +68,7 @@ export default function Dashboard({ onSectionChange }: DashboardProps) {
   });
   const [recentRequests, setRecentRequests] = useState<RecentRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastLoadTime, setLastLoadTime] = useState<number>(0);
 
   const handleViewAllRequests = () => {
     if (onSectionChange) {
@@ -85,9 +86,15 @@ export default function Dashboard({ onSectionChange }: DashboardProps) {
     }
   };
 
-
   useEffect(() => {
     const loadDashboardData = async () => {
+      const now = Date.now();
+      // Éviter les appels trop fréquents (minimum 30 secondes entre les appels)
+      if (now - lastLoadTime < 30000 && lastLoadTime > 0) {
+        console.log('Dashboard: Appel API évité (trop récent)');
+        return;
+      }
+
       setLoading(true);
       try {
         // Charger les statistiques des mandats
@@ -123,6 +130,8 @@ export default function Dashboard({ onSectionChange }: DashboardProps) {
           }));
           setRecentRequests(recentMandates);
         }
+
+        setLastLoadTime(now);
       } catch (error) {
         console.error("Erreur lors du chargement du dashboard:", error);
         // Fallback aux données mockées en cas d'erreur
@@ -142,7 +151,7 @@ export default function Dashboard({ onSectionChange }: DashboardProps) {
     };
 
     loadDashboardData();
-  }, []);
+  }, [lastLoadTime]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

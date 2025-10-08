@@ -3,6 +3,7 @@ import { Repository } from 'typeorm';
 import { User, UserRole, UserStatus } from '../../entities/user.entity';
 export interface LoginResponse {
     access_token: string;
+    refresh_token: string;
     user: {
         id: string;
         email: string;
@@ -38,4 +39,8 @@ export declare class AuthService {
         lastName: string;
         phone?: string;
     }): Promise<User>;
+    refreshTokens(refreshToken: string): Promise<{
+        access_token: string;
+        refresh_token: string;
+    }>;
 }

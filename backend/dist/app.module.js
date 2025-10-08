@@ -24,6 +24,9 @@ const pdf_module_1 = require("./modules/pdf/pdf.module");
 const security_module_1 = require("./modules/security/security.module");
 const verification_module_1 = require("./modules/verification/verification.module");
 const cache_module_1 = require("./modules/cache/cache.module");
+const logger_module_1 = require("./common/logger/logger.module");
+const global_exception_filter_1 = require("./common/filters/global-exception.filter");
+const logging_interceptor_1 = require("./common/interceptors/logging.interceptor");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -68,23 +71,31 @@ exports.AppModule = AppModule = __decorate([
             throttler_1.ThrottlerModule.forRootAsync({
                 imports: [config_1.ConfigModule],
                 inject: [config_1.ConfigService],
-                useFactory: (config) => [
-                    {
-                        name: 'global',
-                        ttl: 60000,
-                        limit: 100,
-                    },
-                    {
-                        name: 'mandate-creation',
-                        ttl: 60000,
-                        limit: 5,
-                    },
-                    {
-                        name: 'auth',
-                        ttl: 60000,
-                        limit: 10,
-                    },
-                ],
+                useFactory: (config) => {
+                    const isDevelopment = config.get('NODE_ENV') === 'development';
+                    return [
+                        {
+                            name: 'global',
+                            ttl: 60000,
+                            limit: isDevelopment ? 1000 : 200,
+                        },
+                        {
+                            name: 'mandate-creation',
+                            ttl: 60000,
+                            limit: isDevelopment ? 20 : 5,
+                        },
+                        {
+                            name: 'auth',
+                            ttl: 60000,
+                            limit: isDevelopment ? 50 : 10,
+                        },
+                        {
+                            name: 'dashboard',
+                            ttl: 30000,
+                            limit: isDevelopment ? 100 : 30,
+                        },
+                    ];
+                },
             }),
             typeorm_1.TypeOrmModule.forRootAsync({
                 imports: [config_1.ConfigModule],
@@ -108,6 +119,7 @@ exports.AppModule = AppModule = __decorate([
                     },
                 }),
             }),
+            logger_module_1.LoggerModule,
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
             mandates_module_1.MandatesModule,
@@ -122,6 +134,14 @@ exports.AppModule = AppModule = __decorate([
             {
                 provide: core_1.APP_GUARD,
                 useClass: throttler_1.ThrottlerGuard,
+            },
+            {
+                provide: core_1.APP_FILTER,
+                useClass: global_exception_filter_1.GlobalExceptionFilter,
+            },
+            {
+                provide: core_1.APP_INTERCEPTOR,
+                useClass: logging_interceptor_1.LoggingInterceptor,
             },
         ],
     })

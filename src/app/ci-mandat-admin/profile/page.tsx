@@ -34,7 +34,7 @@ export default function ProfilePage() {
       try {
         const response = await apiClient.verifyToken();
         if (response.success && response.data) {
-          const user = response.data as unknown as User;
+          const user = response.data.user as unknown as User;
           setCurrentUser(user);
           setFormData({
             firstName: user.personalData?.firstName || "",
@@ -80,7 +80,7 @@ export default function ProfilePage() {
         // Rafraîchir les données utilisateur
         const userResponse = await apiClient.verifyToken();
         if (userResponse.success && userResponse.data) {
-          setCurrentUser(userResponse.data as unknown as User);
+          setCurrentUser(userResponse.data.user as unknown as User);
         }
       } else {
         setMessage({ type: "error", text: response.message || "Erreur lors de la mise à jour" });

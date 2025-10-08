@@ -26,8 +26,9 @@ export class RecaptchaService {
     }
     
     // En développement, on peut désactiver temporairement la vérification reCAPTCHA pour les tests
+    // Mais il est préférable de la laisser active pour tester le flux complet
     if (this.configService.get<string>('NODE_ENV') === 'development') {
-      this.logger.warn('Mode développement - Vérification reCAPTCHA désactivée pour les tests');
+      this.logger.debug('Mode développement - Vérification reCAPTCHA active avec clés de test');
     }
   }
 
@@ -38,11 +39,12 @@ export class RecaptchaService {
    * @returns Promise<boolean> true si la vérification est réussie
    */
   async verifyToken(token: string, expectedAction?: string): Promise<boolean> {
-    // En développement, on désactive temporairement la vérification pour les tests
-    if (this.configService.get<string>('NODE_ENV') === 'development') {
-      this.logger.debug('Mode développement - Vérification reCAPTCHA ignorée');
-      return true;
-    }
+    // En développement, on peut désactiver temporairement la vérification pour les tests
+    // Mais il est préférable de la laisser active pour tester le flux complet
+    // if (this.configService.get<string>('NODE_ENV') === 'development') {
+    //   this.logger.debug('Mode développement - Vérification reCAPTCHA ignorée');
+    //   return true;
+    // }
     
     // Si la clé secrète n'est pas configurée, on désactive la vérification
     if (!this.secretKey) {

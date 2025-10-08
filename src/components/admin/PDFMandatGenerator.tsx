@@ -207,7 +207,24 @@ const PDFMandatGenerator = forwardRef(({
     const logoX = 20;
     const logoY = yPos;
     const logoPath = '/logorhdp.jpeg';
-    doc.addImage(logoPath, 'JPEG', logoX, logoY, logoWidth, logoHeight);
+    
+    // Fonction pour charger le logo avec fallback en base64
+    const loadLogo = () => {
+      try {
+        // Essayer d'ajouter le logo normal
+        doc.addImage(logoPath, 'JPEG', logoX, logoY, logoWidth, logoHeight);
+      } catch (error) {
+        console.warn('Logo normal non trouvé, utilisation du logo base64');
+        // Si le logo normal ne peut pas être chargé, utiliser le logo en base64
+        // ICI: Insérer le code base64 du logo
+        const logoBase64 = ''
+                if (logoBase64) {
+          doc.addImage(logoBase64, 'JPEG', logoX, logoY, logoWidth, logoHeight);
+        }
+      }
+    };
+    
+    loadLogo();
 
     // République à droite
     doc.setFontSize(10);

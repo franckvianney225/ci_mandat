@@ -16,17 +16,25 @@ interface User {
 
 interface ProfileProps {
   currentUser: User | null;
+  onUserUpdate?: (user: User) => void;
 }
 
-export default function Profile({ currentUser }: ProfileProps) {
+export default function Profile({ currentUser, onUserUpdate }: ProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
   });
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
@@ -43,6 +51,14 @@ export default function Profile({ currentUser }: ProfileProps) {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({
       ...prev,
       [name]: value
     }));
@@ -65,8 +81,17 @@ export default function Profile({ currentUser }: ProfileProps) {
         setIsEditing(false);
         // Rafraîchir les données utilisateur
         const userResponse = await apiClient.verifyToken();
+        console.log("🔍 Réponse verifyToken après mise à jour:", userResponse);
         if (userResponse.success && userResponse.data) {
-          // Les données utilisateur seront mises à jour par le composant parent
+          console.log("👤 Données utilisateur après mise à jour:", userResponse.data);
+          console.log("📝 Données envoyées à onUserUpdate:", userResponse.data.user);
+          // Mettre à jour l'utilisateur dans le composant parent
+          if (onUserUpdate) {
+            onUserUpdate(userResponse.data.user as unknown as User);
+            console.log("✅ onUserUpdate appelé avec succès");
+          } else {
+            console.log("⚠️ onUserUpdate n'est pas défini");
+          }
         }
       } else {
         setMessage({ type: "error", text: response.message || "Erreur lors de la mise à jour" });
@@ -89,6 +114,59 @@ export default function Profile({ currentUser }: ProfileProps) {
         phone: currentUser.personalData?.phone || "",
       });
     }
+    setMessage(null);
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsPasswordSubmitting(true);
+    setMessage(null);
+
+    // Validation des mots de passe
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setMessage({ type: "error", text: "Les nouveaux mots de passe ne correspondent pas" });
+      setIsPasswordSubmitting(false);
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setMessage({ type: "error", text: "Le nouveau mot de passe doit contenir au moins 6 caractères" });
+      setIsPasswordSubmitting(false);
+      return;
+    }
+
+    try {
+      const response = await apiClient.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+
+      if (response.success) {
+        setMessage({ type: "success", text: "Mot de passe modifié avec succès" });
+        setIsChangingPassword(false);
+        setPasswordData({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      } else {
+        setMessage({ type: "error", text: response.message || "Erreur lors du changement de mot de passe" });
+      }
+    } catch (error) {
+      console.error("Erreur lors du changement de mot de passe:", error);
+      setMessage({ type: "error", text: "Erreur lors du changement de mot de passe" });
+    } finally {
+      setIsPasswordSubmitting(false);
+    }
+  };
+
+  const handlePasswordCancel = () => {
+    setIsChangingPassword(false);
+    setPasswordData({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
     setMessage(null);
   };
 
@@ -126,15 +204,18 @@ export default function Profile({ currentUser }: ProfileProps) {
       <div className="p-6 bg-white">
         {message && (
           <div className={`mb-6 p-4 rounded-lg ${
-            message.type === "success" 
-              ? "bg-green-50 border border-green-200 text-green-800" 
+            message.type === "success"
+              ? "bg-green-50 border border-green-200 text-green-800"
               : "bg-red-50 border border-red-200 text-red-800"
           }`}>
             {message.text}
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        {/* Informations personnelles */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations personnelles</h3>
+          <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Prénom */}
             <div>
@@ -147,7 +228,7 @@ export default function Profile({ currentUser }: ProfileProps) {
                 value={formData.firstName}
                 onChange={handleInputChange}
                 disabled={!isEditing || isSubmitting}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-700 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-700 disabled:cursor-not-allowed text-gray-900"
                 placeholder="Votre prénom"
               />
             </div>
@@ -163,7 +244,7 @@ export default function Profile({ currentUser }: ProfileProps) {
                 value={formData.lastName}
                 onChange={handleInputChange}
                 disabled={!isEditing || isSubmitting}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-700 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-700 disabled:cursor-not-allowed text-gray-900"
                 placeholder="Votre nom"
               />
             </div>
@@ -178,7 +259,7 @@ export default function Profile({ currentUser }: ProfileProps) {
                 name="email"
                 value={formData.email}
                 disabled
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 cursor-not-allowed"
                 placeholder="Votre email"
               />
               <p className="text-xs text-gray-600 mt-1">
@@ -197,46 +278,147 @@ export default function Profile({ currentUser }: ProfileProps) {
                 value={formData.phone}
                 onChange={handleInputChange}
                 disabled={!isEditing || isSubmitting}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-700 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-700 disabled:cursor-not-allowed text-gray-900"
                 placeholder="Votre numéro de téléphone"
               />
             </div>
           </div>
 
-          {/* Boutons d'action */}
-          <div className="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
-            {!isEditing ? (
-              <button
-                type="button"
-                onClick={() => setIsEditing(true)}
-                className="px-6 py-2 bg-[#FF8200] text-white rounded-lg hover:bg-orange-600 transition-colors"
-              >
-                Modifier le profil
-              </button>
-            ) : (
-              <>
+            {/* Boutons d'action */}
+            <div className="flex justify-end space-x-3 mt-6">
+              {!isEditing ? (
                 <button
                   type="button"
-                  onClick={handleCancel}
-                  disabled={isSubmitting}
+                  onClick={() => setIsEditing(true)}
+                  className="px-6 py-2 bg-[#FF8200] text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  Modifier le profil
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    disabled={isSubmitting}
+                    className="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:border-gray-400 disabled:opacity-50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-6 py-2 bg-[#FF8200] text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors flex items-center"
+                  >
+                    {isSubmitting && (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    )}
+                    {isSubmitting ? "Enregistrement..." : "Enregistrer"}
+                  </button>
+                </>
+              )}
+            </div>
+          </form>
+        </div>
+
+        {/* Séparateur */}
+        <div className="border-t border-gray-200 my-8"></div>
+
+        {/* Changement de mot de passe */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Sécurité</h3>
+          {!isChangingPassword ? (
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div>
+                <p className="text-gray-700">Mot de passe</p>
+                <p className="text-sm text-gray-500">Modifiez votre mot de passe pour renforcer la sécurité</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsChangingPassword(true)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Changer le mot de passe
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handlePasswordSubmit} className="bg-gray-50 p-6 rounded-lg">
+              <div className="grid grid-cols-1 gap-4">
+                {/* Mot de passe actuel */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Mot de passe actuel
+                  </label>
+                  <input
+                    type="password"
+                    name="currentPassword"
+                    value={passwordData.currentPassword}
+                    onChange={handlePasswordChange}
+                    disabled={isPasswordSubmitting}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed text-gray-900"
+                    placeholder="Votre mot de passe actuel"
+                    required
+                  />
+                </div>
+
+                {/* Nouveau mot de passe */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Nouveau mot de passe
+                  </label>
+                  <input
+                    type="password"
+                    name="newPassword"
+                    value={passwordData.newPassword}
+                    onChange={handlePasswordChange}
+                    disabled={isPasswordSubmitting}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed text-gray-900"
+                    placeholder="Votre nouveau mot de passe"
+                    required
+                  />
+                </div>
+
+                {/* Confirmation du nouveau mot de passe */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Confirmer le nouveau mot de passe
+                  </label>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={passwordData.confirmPassword}
+                    onChange={handlePasswordChange}
+                    disabled={isPasswordSubmitting}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF8200] focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed text-gray-900"
+                    placeholder="Confirmez votre nouveau mot de passe"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Boutons d'action */}
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={handlePasswordCancel}
+                  disabled={isPasswordSubmitting}
                   className="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:border-gray-400 disabled:opacity-50 transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isPasswordSubmitting}
                   className="px-6 py-2 bg-[#FF8200] text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors flex items-center"
                 >
-                  {isSubmitting && (
+                  {isPasswordSubmitting && (
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   )}
-                  {isSubmitting ? "Enregistrement..." : "Enregistrer"}
+                  {isPasswordSubmitting ? "Modification..." : "Modifier le mot de passe"}
                 </button>
-              </>
-            )}
-          </div>
-        </form>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

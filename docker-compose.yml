@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: ci_mandat_db
       POSTGRES_USER: ci_mandat_user
-      POSTGRES_PASSWORD: ci_mandat_password_2024
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ci_mandat_password_2024_dev}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     ports:
       - "5432:5432"
@@ -30,8 +30,8 @@ services:
     image: dpage/pgadmin4:latest
     container_name: ci_mandat_pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@ci-mandat.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@ci-mandat.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123_dev}
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     ports:
       - "8080:80"
@@ -51,14 +51,14 @@ services:
     container_name: ci_mandat_backend
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://ci_mandat_user:ci_mandat_password_2024@postgres:5432/ci_mandat_db
-      JWT_ACCESS_SECRET: your_super_secret_access_key_32_chars_minimum_dev
-      JWT_REFRESH_SECRET: your_super_secret_refresh_key_32_chars_minimum_dev
-      ENCRYPTION_KEY: 64_char_hex_encryption_key_for_aes_256_gcm_encryption_dev
-      DATA_ENCRYPTION_IV: 16_char_hex_initialization_vector_dev
-      ALLOWED_ORIGINS: http://localhost:3000
-      FRONTEND_URL: http://localhost:3000
-      BACKEND_URL: http://localhost:3001
+      DATABASE_URL: postgresql://ci_mandat_user:${DB_PASSWORD:-ci_mandat_password_2024_dev}@postgres:5432/ci_mandat_db
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-your_super_secret_access_key_32_chars_minimum_dev}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your_super_secret_refresh_key_32_chars_minimum_dev}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-64_char_hex_encryption_key_for_aes_256_gcm_encryption_dev}
+      DATA_ENCRYPTION_IV: ${DATA_ENCRYPTION_IV:-16_char_hex_initialization_vector_dev}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      BACKEND_URL: ${BACKEND_URL:-http://localhost:3001}
     ports:
       - "3001:3001"
     volumes:

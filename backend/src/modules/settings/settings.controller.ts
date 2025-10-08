@@ -3,7 +3,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../../entities/user.entity';
-import { SettingsService, EmailConfig } from './settings.service';
+import { SettingsService, EmailConfig, SystemConfig } from './settings.service';
 
 @Controller('settings')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -83,6 +83,42 @@ export class SettingsController {
       return {
         success: false,
         error: error.message || 'Échec de l\'envoi de l\'email de test. Vérifiez vos paramètres.'
+      };
+    }
+  }
+
+  @Get('system')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  async getSystemConfig(): Promise<{ success: boolean; data?: SystemConfig; error?: string }> {
+    try {
+      const config = await this.settingsService.getSystemConfig();
+      return {
+        success: true,
+        data: config
+      };
+    } catch (error) {
+      console.error('Erreur lors de la récupération de la configuration système:', error);
+      return {
+        success: false,
+        error: 'Erreur lors de la récupération de la configuration système'
+      };
+    }
+  }
+
+  @Post('system')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  async updateSystemConfig(@Body() config: SystemConfig): Promise<{ success: boolean; message?: string; error?: string }> {
+    try {
+      await this.settingsService.updateSystemConfig(config);
+      return {
+        success: true,
+        message: 'Configuration système sauvegardée avec succès'
+      };
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde de la configuration système:', error);
+      return {
+        success: false,
+        error: 'Erreur lors de la sauvegarde de la configuration système'
       };
     }
   }

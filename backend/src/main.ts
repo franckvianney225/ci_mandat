@@ -5,6 +5,8 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
+import * as csurf from 'csurf';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -17,9 +19,15 @@ async function bootstrap() {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: [`'self'`],
-        styleSrc: [`'self'`, `'unsafe-inline'`],
-        imgSrc: [`'self'`, 'data:', 'validator.swagger.io'],
-        scriptSrc: [`'self'`, `https: 'unsafe-inline'`],
+        styleSrc: [`'self'`],
+        scriptSrc: [`'self'`],
+        imgSrc: [`'self'`, 'data:'],
+        fontSrc: [`'self'`],
+        connectSrc: [`'self'`],
+        frameSrc: [`'none'`],
+        objectSrc: [`'none'`],
+        baseUri: [`'self'`],
+        formAction: [`'self'`],
       },
     },
   }));
@@ -27,15 +35,45 @@ async function bootstrap() {
   // Compression des réponses
   app.use(compression());
 
+  // Limites de taille pour les requêtes
+  app.use(json({ limit: '1mb' }));
+  app.use(urlencoded({ limit: '1mb', extended: true }));
+
   // Parser des cookies
   app.use(cookieParser());
 
-  // Validation globale des données (simplifiée pour le débogage)
+  // Protection CSRF - Exclure les endpoints d'authentification
+  app.use((req, res, next) => {
+    // Exclure les endpoints d'authentification du CSRF
+    const excludedPaths = [
+      '/api/v1/auth/login',
+      '/api/v1/auth/logout',
+      '/api/v1/auth/verify',
+      '/api/v1/mandates'
+    ];
+    
+    if (excludedPaths.some(path => req.path.startsWith(path))) {
+      return next();
+    }
+    
+    // Appliquer CSRF uniquement aux autres endpoints
+    return csurf({
+      cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      }
+    })(req, res, next);
+  });
+
+  // Validation globale des données sécurisée
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: false, // Désactivé temporairement
+      forbidNonWhitelisted: true, // Activer pour rejeter les propriétés non autorisées
       transform: true,
+      forbidUnknownValues: true,
+      validationError: { target: false },
       transformOptions: {
         enableImplicitConversion: true,
       },

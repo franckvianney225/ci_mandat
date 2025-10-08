@@ -1,14 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
-import Dashboard from "@/components/admin/Dashboard";
-import RequestsManagement from "@/components/admin/RequestsManagement";
-import UsersManagement from "@/components/admin/UsersManagement";
-import Settings from "@/components/admin/Settings";
-import Profile from "@/components/admin/Profile";
 import { apiClient } from "@/lib/api";
+
+// Composants chargés en lazy loading
+const LazyDashboard = lazy(() => import("@/components/admin/Dashboard"));
+const LazyRequestsManagement = lazy(() => import("@/components/admin/RequestsManagement"));
+const LazyUsersManagement = lazy(() => import("@/components/admin/UsersManagement"));
+const LazySettings = lazy(() => import("@/components/admin/Settings"));
+const LazyProfile = lazy(() => import("@/components/admin/Profile"));
+
+// Composants de fallback
+import DashboardFallback from "@/components/fallback/DashboardFallback";
+import RequestsManagementFallback from "@/components/fallback/RequestsManagementFallback";
+import UsersManagementFallback from "@/components/fallback/UsersManagementFallback";
+import SettingsFallback from "@/components/fallback/SettingsFallback";
+import ProfileFallback from "@/components/fallback/ProfileFallback";
 
 interface User {
   id: string;
@@ -17,6 +26,7 @@ interface User {
   personalData: {
     firstName: string;
     lastName: string;
+    phone?: string;
   };
 }
 
@@ -24,6 +34,12 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  // Fonction pour mettre à jour l'utilisateur
+  const handleUserUpdate = (updatedUser: User) => {
+    console.log("🔄 Dashboard - handleUserUpdate appelé avec:", updatedUser);
+    setCurrentUser(updatedUser);
+  };
   const [activeSection, setActiveSection] = useState("dashboard");
   const router = useRouter();
 
@@ -33,8 +49,9 @@ export default function AdminDashboard() {
       try {
         const response = await apiClient.verifyToken();
         if (response.success && response.data) {
-          // L'endpoint /auth/profile retourne directement l'utilisateur
-          setCurrentUser(response.data as unknown as User);
+          // L'endpoint /auth/profile retourne { user: User }
+          console.log("🔄 Dashboard - Données utilisateur chargées:", response.data.user);
+          setCurrentUser(response.data.user as unknown as User);
           setIsAuthenticated(true);
         } else {
           router.push("/ci-mandat-admin");
@@ -62,17 +79,44 @@ export default function AdminDashboard() {
   const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
-        return <Dashboard onSectionChange={setActiveSection} />;
+        return (
+          <Suspense fallback={<DashboardFallback />}>
+            <LazyDashboard onSectionChange={setActiveSection} />
+          </Suspense>
+        );
       case "requests":
-        return <RequestsManagement currentUser={currentUser} />;
+        return (
+          <Suspense fallback={<RequestsManagementFallback />}>
+            <LazyRequestsManagement currentUser={currentUser} />
+          </Suspense>
+        );
       case "users":
-        return <UsersManagement />;
+        return (
+          <Suspense fallback={<UsersManagementFallback />}>
+            <LazyUsersManagement />
+          </Suspense>
+        );
       case "settings":
-        return <Settings />;
+        return (
+          <Suspense fallback={<SettingsFallback />}>
+            <LazySettings />
+          </Suspense>
+        );
       case "profile":
-        return <Profile currentUser={currentUser} />;
+        return (
+          <Suspense fallback={<ProfileFallback />}>
+            <LazyProfile
+              currentUser={currentUser}
+              onUserUpdate={handleUserUpdate}
+            />
+          </Suspense>
+        );
       default:
-        return <Dashboard onSectionChange={setActiveSection} />;
+        return (
+          <Suspense fallback={<DashboardFallback />}>
+            <LazyDashboard onSectionChange={setActiveSection} />
+          </Suspense>
+        );
     }
   };
 

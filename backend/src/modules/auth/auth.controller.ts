@@ -16,7 +16,7 @@ import { AuthService, LoginResponse } from './auth.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { UserRole } from '../../entities/user.entity';
 
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, IsOptional } from 'class-validator';
 
 class LoginDto {
   @IsEmail()
@@ -46,8 +46,16 @@ class ChangePasswordDto {
 }
 
 class UpdateProfileDto {
+  @IsString()
+  @IsNotEmpty()
   firstName: string;
+
+  @IsString()
+  @IsNotEmpty()
   lastName: string;
+
+  @IsOptional()
+  @IsString()
   phone?: string;
 }
 
@@ -60,7 +68,7 @@ export class AuthController {
   async login(
     @Body() body: any,
     @Res({ passthrough: true }) res: Response // Injecter la réponse
-  ): Promise<{ user: any; access_token: string }> { // Retourner user et token
+  ): Promise<{ user: any; access_token: string }> { // Retourner user et token (refresh_token est dans le cookie)
     console.log('📨 Corps de la requête brute:', body);
     console.log('🔍 Type de body:', typeof body);
     console.log('🔍 Clés de body:', Object.keys(body));
@@ -82,15 +90,24 @@ export class AuthController {
     
     const loginResponse = await this.authService.login(email, password);
     
-    // Définir le cookie HttpOnly sécurisé (optionnel pour compatibilité)
+    // Définir le cookie HttpOnly sécurisé
     res.cookie('adminToken', loginResponse.access_token, {
       httpOnly: true,
-      secure: false, // Désactiver secure pour HTTP
-      sameSite: 'lax', // Plus permissif que strict
-      maxAge: 24 * 60 * 60 * 1000, // 24 heures
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000, // 15 minutes
       path: '/',
     });
     
+    // Définir le cookie refresh token HttpOnly sécurisé
+    res.cookie('refreshToken', loginResponse.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
+      path: '/',
+    });
+
     // Retourner les infos utilisateur ET le token pour le frontend
     return {
       user: loginResponse.user,
@@ -110,8 +127,22 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')
-  getProfile(@Request() req) {
-    return req.user;
+  async getProfile(@Request() req) {
+    // Récupérer les données fraîches depuis la base de données
+    const freshUser = await this.authService.validateToken(req.user.id);
+    console.log('🔍 Endpoint /auth/profile - Données retournées:', freshUser.personalData);
+    return {
+      user: {
+        id: freshUser.id,
+        email: freshUser.email,
+        role: freshUser.role,
+        status: freshUser.status,
+        personalData: freshUser.personalData,
+        createdAt: freshUser.createdAt,
+        lastLogin: freshUser.lastLogin,
+        loginAttempts: freshUser.loginAttempts,
+      }
+    };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -137,18 +168,65 @@ export class AuthController {
     @Request() req,
     @Body() updateProfileDto: UpdateProfileDto,
   ) {
-    return this.authService.updateProfile(
+    console.log('🔍 Endpoint PATCH /auth/profile appelé avec:', updateProfileDto);
+    console.log('👤 User ID:', req.user.id);
+    
+    const result = await this.authService.updateProfile(
       req.user.id,
       updateProfileDto,
     );
+    
+    console.log('✅ Résultat de updateProfile:', result.personalData);
+    return result;
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refreshTokens(
+    @Request() req,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const refreshToken = req.cookies?.refreshToken;
+    
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token manquant');
+    }
+
+    const tokens = await this.authService.refreshTokens(refreshToken);
+
+    // Définir les nouveaux cookies
+    res.cookie('adminToken', tokens.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+      path: '/',
+    });
+
+    res.cookie('refreshToken', tokens.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
+      path: '/',
+    });
+
+    return { access_token: tokens.access_token };
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Res({ passthrough: true }) res: Response) {
-    // Effacer le cookie
+    // Effacer les cookies
     res.clearCookie('adminToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',

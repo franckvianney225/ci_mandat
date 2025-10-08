@@ -259,6 +259,16 @@ class ApiClient {
     });
   }
 
+  async changePassword(passwordData: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<ApiResponse> {
+    return this.request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(passwordData),
+    });
+  }
+
   // Dashboard API
   async getDashboardStats(): Promise<ApiResponse<DashboardStats>> {
     return this.request('/dashboard/stats');

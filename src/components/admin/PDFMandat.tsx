@@ -33,12 +33,12 @@ export default function PDFMandat({
             </div>
           </div>
           <div className="text-xs text-black font-semibold">CURESS</div>
-          <div className="text-xs text-gray-600">L'Espérance au Service du Peuple</div>
+          <div className="text-xs text-gray-600">L&apos;Espérance au Service du Peuple</div>
         </div>
 
         {/* Titre à droite */}
         <div className="text-right">
-          <div className="text-sm text-black mb-1">RÉPUBLIQUE DE CÔTE D'IVOIRE</div>
+          <div className="text-sm text-black mb-1">RÉPUBLIQUE DE CÔTE D&apos;IVOIRE</div>
           <div className="text-sm text-black">Union-Discipline-Travail</div>
         </div>
       </div>
@@ -64,7 +64,7 @@ export default function PDFMandat({
         </p>
 
         <p className="mb-4">
-          <strong>ALLASSANE OUATTARA</strong> candidat à l'élection présidentielle du 25 octobre 2025,
+          <strong>ALLASSANE OUATTARA</strong> candidat à l&apos;élection présidentielle du 25 octobre 2025,
         </p>
 
         <p className="mb-4">
@@ -80,7 +80,7 @@ export default function PDFMandat({
         </p>
 
         <p className="mb-4">
-          de la circonscription électorale d'<strong>{circonscription}</strong>.
+          de la circonscription électorale d&apos;<strong>{circonscription}</strong>.
         </p>
 
         <p className="mb-8">

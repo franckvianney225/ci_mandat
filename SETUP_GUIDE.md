@@ -217,7 +217,7 @@ docker-compose logs backend -f
 docker-compose exec backend sh
 ```
 
-## 📞 Support
+## � Support
 
 Pour toute question ou problème :
 

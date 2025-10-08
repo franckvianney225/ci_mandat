@@ -29,8 +29,8 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
       try {
         const response = await apiClient.verifyToken();
         if (response.success && response.data) {
-          // L'endpoint /auth/profile retourne directement l'utilisateur
-          setCurrentUser(response.data as unknown as User);
+          // L'endpoint /auth/profile retourne { user: User }
+          setCurrentUser(response.data.user as unknown as User);
         }
       } catch (error) {
         console.error("Erreur lors de la récupération de l'utilisateur:", error);
@@ -115,14 +115,16 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
     <div className="w-64 bg-gradient-to-b from-white to-gray-50 shadow-xl border-r border-gray-100 flex flex-col transition-all duration-300 hover:shadow-2xl">
       {/* Logo et titre amélioré */}
       <div className="flex items-center justify-center px-6 py-5 border-b border-gray-100 bg-white/80 backdrop-blur-sm">
-        <div className="h-10 w-10 bg-[#FF8200] rounded-xl shadow-md flex items-center justify-center">
-          <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-          </svg>
+        <div className="h-10 w-10 rounded-xl shadow-md flex items-center justify-center overflow-hidden">
+          <img
+            src="/logorhdp.jpeg"
+            alt="Logo RHD"
+            className="w-full h-full object-cover"
+          />
         </div>
         <div className="ml-3">
           <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-            OK
+            CI-MANDAT
           </h1>
           <p className="text-xs text-gray-500 font-medium">Panel d&apos;administration</p>
         </div>

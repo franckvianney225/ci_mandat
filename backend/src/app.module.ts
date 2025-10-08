@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import * as Joi from 'joi';
 
@@ -19,6 +19,11 @@ import { PdfModule } from './modules/pdf/pdf.module';
 import { SecurityModule } from './modules/security/security.module';
 import { VerificationModule } from './modules/verification/verification.module';
 import { CacheModule } from './modules/cache/cache.module';
+
+// Logger, Filtres et Intercepteurs
+import { LoggerModule } from './common/logger/logger.module';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 // Guards et Intercepteurs
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -83,23 +88,32 @@ import { RolesGuard } from './common/guards/roles.guard';
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => [
-        {
-          name: 'global',
-          ttl: 60000, // 1 minute
-          limit: 100, // 100 requêtes par minute pour les endpoints généraux
-        },
-        {
-          name: 'mandate-creation',
-          ttl: 60000, // 1 minute
-          limit: 5, // 5 créations de mandat par minute par IP
-        },
-        {
-          name: 'auth',
-          ttl: 60000, // 1 minute
-          limit: 10, // 10 tentatives de connexion par minute
-        },
-      ],
+      useFactory: (config: ConfigService) => {
+        const isDevelopment = config.get<string>('NODE_ENV') === 'development';
+        
+        return [
+          {
+            name: 'global',
+            ttl: 60000, // 1 minute
+            limit: isDevelopment ? 1000 : 200, // Plus permissif en développement
+          },
+          {
+            name: 'mandate-creation',
+            ttl: 60000, // 1 minute
+            limit: isDevelopment ? 20 : 5, // Plus permissif en développement
+          },
+          {
+            name: 'auth',
+            ttl: 60000, // 1 minute
+            limit: isDevelopment ? 50 : 10, // Plus permissif en développement
+          },
+          {
+            name: 'dashboard',
+            ttl: 30000, // 30 secondes
+            limit: isDevelopment ? 100 : 30, // Limite spécifique pour le dashboard
+          },
+        ];
+      },
     }),
 
     // Base de données
@@ -128,6 +142,9 @@ import { RolesGuard } from './common/guards/roles.guard';
       }),
     }),
 
+    // Logger global
+    LoggerModule,
+
     // Modules fonctionnels
     AuthModule,
     UsersModule,
@@ -144,6 +161,16 @@ import { RolesGuard } from './common/guards/roles.guard';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    // Filtre d'exceptions global
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
+    },
+    // Interceptor de logging global
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
     },
   ],
 })

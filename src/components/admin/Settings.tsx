@@ -2,32 +2,24 @@
 
 import { useState } from "react";
 import EmailSettings from "./settings/EmailSettings";
-import SystemSettings from "./settings/SystemSettings";
-import SecuritySettings from "./settings/SecuritySettings";
-import NotificationSettings from "./settings/NotificationSettings";
+import SystemSecuritySettings from "./settings/SystemSecuritySettings";
 
-type SettingsTab = "email" | "system" | "security" | "notifications";
+type SettingsTab = "email" | "system-security";
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("email");
 
   const tabs = [
     { id: "email" as SettingsTab, name: "Configuration Email", icon: "📧" },
-    { id: "system" as SettingsTab, name: "Paramètres Système", icon: "⚙️" },
-    { id: "security" as SettingsTab, name: "Sécurité", icon: "🔒" },
-    { id: "notifications" as SettingsTab, name: "Notifications", icon: "🔔" },
+    { id: "system-security" as SettingsTab, name: "Système & Sécurité", icon: "⚙️" },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
       case "email":
         return <EmailSettings />;
-      case "system":
-        return <SystemSettings />;
-      case "security":
-        return <SecuritySettings />;
-      case "notifications":
-        return <NotificationSettings />;
+      case "system-security":
+        return <SystemSecuritySettings />;
       default:
         return <EmailSettings />;
     }

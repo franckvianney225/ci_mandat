@@ -77,10 +77,24 @@ class UpdateUserDto {
 }
 
 class UserFiltersDto {
+  @IsOptional()
+  @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsEnum(UserRole)
   role?: UserRole;
+
+  @IsOptional()
+  @IsEnum(UserStatus)
   status?: UserStatus;
+
+  @IsOptional()
+  @Type(() => Number)
   page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
   limit?: number;
 }
 

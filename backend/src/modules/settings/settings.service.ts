@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as nodemailer from 'nodemailer';
 import { EmailConfigEntity } from '../../entities/email-config.entity';
+import { SystemConfigEntity } from '../../entities/system-config.entity';
 
 export interface EmailConfig {
   smtpHost: string;
@@ -15,12 +16,27 @@ export interface EmailConfig {
   useTLS: boolean;
 }
 
+export interface SystemConfig {
+  appName: string;
+  appUrl: string;
+  maintenanceMode: boolean;
+  debugMode: boolean;
+  sessionTimeout: number;
+  maxLoginAttempts: number;
+  enableAuditLogs: boolean;
+  enableEmailNotifications: boolean;
+  backupFrequency: string;
+  dataRetentionDays: number;
+}
+
 @Injectable()
 export class SettingsService {
   
   constructor(
     @InjectRepository(EmailConfigEntity)
-    private readonly emailConfigRepository: Repository<EmailConfigEntity>
+    private readonly emailConfigRepository: Repository<EmailConfigEntity>,
+    @InjectRepository(SystemConfigEntity)
+    private readonly systemConfigRepository: Repository<SystemConfigEntity>
   ) {}
 
   async getEmailConfig(): Promise<EmailConfig> {
@@ -217,6 +233,97 @@ Ne répondez pas à cet email.`
       tls: {
         rejectUnauthorized: false // Pour éviter les erreurs de certificat en développement
       }
+    });
+  }
+
+  async getSystemConfig(): Promise<SystemConfig> {
+    // Récupérer la configuration depuis la base de données
+    const configs = await this.systemConfigRepository.find({
+      order: { updatedAt: 'DESC' },
+      take: 1
+    });
+
+    if (configs.length > 0) {
+      const config = configs[0];
+      return {
+        appName: config.appName,
+        appUrl: config.appUrl,
+        maintenanceMode: config.maintenanceMode,
+        debugMode: config.debugMode,
+        sessionTimeout: config.sessionTimeout,
+        maxLoginAttempts: config.maxLoginAttempts,
+        enableAuditLogs: config.enableAuditLogs,
+        enableEmailNotifications: config.enableEmailNotifications,
+        backupFrequency: config.backupFrequency,
+        dataRetentionDays: config.dataRetentionDays,
+      };
+    }
+
+    // Retourner les valeurs par défaut si aucune configuration n'existe
+    return {
+      appName: process.env.APP_NAME || 'CI-Mandat',
+      appUrl: process.env.APP_URL || 'https://ci-mandat.ci',
+      maintenanceMode: false,
+      debugMode: process.env.NODE_ENV === 'development',
+      sessionTimeout: parseInt(process.env.SESSION_TIMEOUT) || 60,
+      maxLoginAttempts: parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5,
+      enableAuditLogs: true,
+      enableEmailNotifications: true,
+      backupFrequency: process.env.BACKUP_FREQUENCY || 'daily',
+      dataRetentionDays: parseInt(process.env.DATA_RETENTION_DAYS) || 365,
+    };
+  }
+
+  async updateSystemConfig(config: SystemConfig): Promise<void> {
+    // Sauvegarder la configuration en base de données
+    const existingConfigs = await this.systemConfigRepository.find({
+      order: { updatedAt: 'DESC' },
+      take: 1
+    });
+
+    if (existingConfigs.length > 0) {
+      // Mettre à jour la configuration existante
+      const existingConfig = existingConfigs[0];
+      await this.systemConfigRepository.update(existingConfig.id, {
+        appName: config.appName,
+        appUrl: config.appUrl,
+        maintenanceMode: config.maintenanceMode,
+        debugMode: config.debugMode,
+        sessionTimeout: config.sessionTimeout,
+        maxLoginAttempts: config.maxLoginAttempts,
+        enableAuditLogs: config.enableAuditLogs,
+        enableEmailNotifications: config.enableEmailNotifications,
+        backupFrequency: config.backupFrequency,
+        dataRetentionDays: config.dataRetentionDays,
+      });
+    } else {
+      // Créer une nouvelle configuration
+      const newConfig = this.systemConfigRepository.create({
+        appName: config.appName,
+        appUrl: config.appUrl,
+        maintenanceMode: config.maintenanceMode,
+        debugMode: config.debugMode,
+        sessionTimeout: config.sessionTimeout,
+        maxLoginAttempts: config.maxLoginAttempts,
+        enableAuditLogs: config.enableAuditLogs,
+        enableEmailNotifications: config.enableEmailNotifications,
+        backupFrequency: config.backupFrequency,
+        dataRetentionDays: config.dataRetentionDays,
+      });
+      await this.systemConfigRepository.save(newConfig);
+    }
+
+    console.log('Configuration système sauvegardée en base de données:', {
+      appName: config.appName,
+      appUrl: config.appUrl,
+      maintenanceMode: config.maintenanceMode,
+      debugMode: config.debugMode,
+      sessionTimeout: config.sessionTimeout,
+      maxLoginAttempts: config.maxLoginAttempts,
+      enableAuditLogs: config.enableAuditLogs,
+      enableEmailNotifications: config.enableEmailNotifications,
+      backupFrequency: config.backupFrequency,
+      dataRetentionDays: config.dataRetentionDays,
     });
   }
 }
